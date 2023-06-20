@@ -12,12 +12,33 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document(collection = "MediaLayers")
-public class MediaLayer {
+public class MediaLayer implements Comparable<MediaLayer> {
     @Id
-    private int LayerNumber;
-    private String status;
-    private long duration;
-    private LocalDateTime lastModified;
-    private int numberOfCalls;
+    private int layerNumber;//a number which tells which layer number it is
+    private String status;  // red<orange<yellow<green
+    private long duration; // total sum of durations of all the simultaneous calls going on in the media layer
+    private LocalDateTime lastModified; // it shows the last time a new call was originated/hung-up
+    private int numberOfCalls; //it tells us the current total number of calls in the media Layer
 
+    public void updateLastModified(long l) {
+        // last modified fields and ....  to update the value of duration
+    }
+
+    public void decrLoad() {
+        numberOfCalls=numberOfCalls-1;
+    }
+
+    public void incrLoad() {
+        numberOfCalls=numberOfCalls+1;
+    }
+    @Override
+    public int compareTo(MediaLayer other) {
+        int numberOfCallsComparison = Integer.compare(this.numberOfCalls, other.numberOfCalls);
+
+        if (numberOfCallsComparison != 0) {
+            return numberOfCallsComparison;
+        } else {
+            return Long.compare(this.duration, other.duration);
+        }
+    }
 }
