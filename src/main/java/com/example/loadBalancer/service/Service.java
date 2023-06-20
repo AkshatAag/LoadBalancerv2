@@ -47,7 +47,7 @@ public class Service {
         loadRedis.setConversationId(legId, conversationId);
         destination.updateLastModified(System.currentTimeMillis());
         destination.incrLoad();
-
+        mediaLayerRepo.save(destination);
         return "Send the call to media layer number : " + destination.getLayerNumber();
     }
 
@@ -71,6 +71,7 @@ public class Service {
             MediaLayer mediaLayer = optionalMediaLayer.get();
             mediaLayer.updateLastModified(System.currentTimeMillis());
             mediaLayer.decrLoad();
+            mediaLayerRepo.save(mediaLayer);
         }
         return "EVENT FROM THE MEDIA LAYER WAS PROCESSED";
     }

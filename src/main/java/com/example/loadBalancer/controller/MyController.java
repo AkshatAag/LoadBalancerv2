@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 public class MyController {
     @Autowired
     private Service service;
-    @PostMapping("/controlLayer")
+    @PostMapping("/control_layer")
     public String processEventFromControlLayer(@RequestBody CallFromControlLayer callFromControlLayer){
         return service.processEventControlLayer(callFromControlLayer);
     }
