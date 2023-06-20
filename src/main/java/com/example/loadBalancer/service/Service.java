@@ -34,49 +34,60 @@ public class Service {
         String conversationId = callFromControlLayer.getConversationId();
         MediaLayer destination = null;
 
+        List<MediaLayer> mediaLayerList = mediaLayerRepo.findAll();
+        long curTime = System.currentTimeMillis();
+        for(MediaLayer mediaLayer : mediaLayerList) {
+            mediaLayer.updateLastModified(curTime);
+        }
+        mediaLayerRepo.saveAll(mediaLayerList);
+
         if (mediaLayerNumber != -1) { //if this conversation already has an ongoing media layer assigned to it
             Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(mediaLayerNumber);
             destination = optionalMediaLayer.orElseThrow();
         } else {
-            destination = getLeastLoaded();
+            destination = Collections.min(mediaLayerList);
             mediaLayerNumber = destination.getLayerNumber();
             loadRedis.setMediaLayer(conversationId, String.valueOf(mediaLayerNumber));
         }
 
-        callRepo.save(new Call(legId, conversationId, mediaLayerNumber, LocalDateTime.now()));
+        callRepo.save(new Call(legId, conversationId, mediaLayerNumber, System.currentTimeMillis()));
         loadRedis.setConversationId(legId, conversationId);
-        destination.updateLastModified(System.currentTimeMillis());
         destination.incrLoad();
         mediaLayerRepo.save(destination);
         return "Send the call to media layer number : " + destination.getLayerNumber();
     }
+
+
 
     public int getMediaLayerNumber(CallFromControlLayer callFromControlLayer) {
         String conversationId = callFromControlLayer.getConversationId();
         return loadRedis.getMediaLayer(conversationId);
     }
 
-    private MediaLayer getLeastLoaded() {
-        List<MediaLayer> mediaLayerList = mediaLayerRepo.findAll();
-        return Collections.min(mediaLayerList);
-    }
 
     public String processEventFromMediaLayer(EventFromMediaLayer event) {
         if (event.getEventName().equals("CHANNEL_HANGUP")) {
             String conversationId = loadRedis.getConversationId(event.getCoreUUID());
             int mediaLayerNumber = loadRedis.getMediaLayer(conversationId);
+            Optional<Call> optionalCurCall = callRepo.findById(event.getCoreUUID());
+            Call curCall = optionalCurCall.get();
             callRepo.deleteById(event.getCoreUUID());
+
             loadRedis.remove(event.getCoreUUID());
             Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(mediaLayerNumber);
             MediaLayer mediaLayer = optionalMediaLayer.get();
-            mediaLayer.updateLastModified(System.currentTimeMillis());
+
+            mediaLayer.decreaseDuration(System.currentTimeMillis(),curCall.getTimeStamp());
             mediaLayer.decrLoad();
+
             mediaLayerRepo.save(mediaLayer);
+
         }
         return "EVENT FROM THE MEDIA LAYER WAS PROCESSED";
     }
 
     public String addNewMediaLayer(MediaLayer mediaLayer) {
+        mediaLayer.setLastModified(System.currentTimeMillis());
         mediaLayerRepo.save(mediaLayer);
         return "NEW Media Layer was added to Mongo";
     }

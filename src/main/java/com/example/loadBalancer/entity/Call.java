@@ -17,5 +17,5 @@ public class Call {
     private String callId;
     private String conversationId;
     private int mediaLayerNumber;
-    private LocalDateTime timeStamp;
+    private long timeStamp;
 }

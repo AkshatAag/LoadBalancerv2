@@ -6,8 +6,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,11 +15,12 @@ public class MediaLayer implements Comparable<MediaLayer> {
     private int layerNumber;//a number which tells which layer number it is
     private String status;  // red<orange<yellow<green
     private long duration; // total sum of durations of all the simultaneous calls going on in the media layer
-    private LocalDateTime lastModified; // it shows the last time a new call was originated/hung-up
+    private long lastModified; // it shows the last time a new call was originated/hung-up
     private int numberOfCalls; //it tells us the current total number of calls in the media Layer
-
-    public void updateLastModified(long l) {
+    public void updateLastModified(long curTime) {
         // last modified fields and ....  to update the value of duration
+        duration += (curTime - lastModified) * numberOfCalls;
+        lastModified = curTime;
     }
 
     public void decrLoad() {
@@ -40,5 +39,9 @@ public class MediaLayer implements Comparable<MediaLayer> {
         } else {
             return Long.compare(this.duration, other.duration);
         }
+    }
+
+    public void decreaseDuration(long curTime, long startTime) {
+        duration = duration - (curTime-startTime);
     }
 }
