@@ -5,6 +5,7 @@ public class Utils {
     public static final float ORANGE = 0.3F;
     public static final float YELLOW = 0.7F;
     public static final float GREEN = 1F;
+
     public static float getNumberFromString(String inputString) {
         // Define your mappings here
         // Example:
@@ -14,7 +15,7 @@ public class Utils {
             return ORANGE;
         } else if (inputString.equalsIgnoreCase("yellow")) {
             return YELLOW;
-        }else if (inputString.equalsIgnoreCase("green")) {
+        } else if (inputString.equalsIgnoreCase("green")) {
             return GREEN;
         }
         // Add more mappings as needed

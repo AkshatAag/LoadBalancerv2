@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document(collection = "MediaLayers")
-public class MediaLayer implements Comparable<MediaLayer> {
+public class MediaLayer  {
     @Id
     private int layerNumber;//a number which tells which layer number it is
     private String status;  // red<orange<yellow<green
@@ -18,6 +18,7 @@ public class MediaLayer implements Comparable<MediaLayer> {
     private long lastModified; // it shows the last time a new call was originated/hung-up
     private int numberOfCalls; //it tells us the current total number of calls in the media Layer
     private int maxLoad; //defines the maximum load of a mediaLayer
+
     public void updateLastModified(long curTime) {
         // last modified fields and ....  to update the value of duration
         duration += (curTime - lastModified) * numberOfCalls;
@@ -25,25 +26,14 @@ public class MediaLayer implements Comparable<MediaLayer> {
     }
 
     public void decrLoad() {
-        numberOfCalls=numberOfCalls-1;
+        numberOfCalls = numberOfCalls - 1;
     }
 
     public void incrLoad() {
-        numberOfCalls=numberOfCalls+1;
-    }
-    @Override
-    public int compareTo(MediaLayer other) {
-
-        int numberOfCallsComparison = Integer.compare(this.numberOfCalls, other.numberOfCalls);
-
-        if (numberOfCallsComparison != 0) {
-            return numberOfCallsComparison;
-        } else {
-            return Long.compare(this.duration, other.duration);
-        }
+        numberOfCalls = numberOfCalls + 1;
     }
 
     public void decreaseDuration(long curTime, long startTime) {
-        duration = duration + numberOfCalls*(curTime-lastModified) - (curTime-startTime);
+        duration = duration + numberOfCalls * (curTime - lastModified) - (curTime - startTime);
     }
 }
