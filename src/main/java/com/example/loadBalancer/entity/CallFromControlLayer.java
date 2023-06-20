@@ -10,7 +10,6 @@ import java.io.Serializable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CallFromControlLayer implements Serializable {
     @Id
-
     private String legId;
     private String conversationId;
 
