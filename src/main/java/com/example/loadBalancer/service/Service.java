@@ -73,6 +73,7 @@ public class Service {
             if (curRatio < ratio || (curRatio == ratio && curDuration < minDuration)) {
                 minLayerIdx = idx;
                 minDuration = curDuration;
+                ratio=curRatio;
             }
         }
         return mediaLayerList.get(minLayerIdx);

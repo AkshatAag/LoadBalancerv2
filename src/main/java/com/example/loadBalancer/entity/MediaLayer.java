@@ -44,6 +44,6 @@ public class MediaLayer implements Comparable<MediaLayer> {
     }
 
     public void decreaseDuration(long curTime, long startTime) {
-        duration = duration - (curTime-startTime);
+        duration = duration + numberOfCalls*(curTime-lastModified) - (curTime-startTime);
     }
 }
