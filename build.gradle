@@ -13,20 +13,16 @@ repositories {
 }
 
 dependencies {
-//	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-//	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-//	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-//	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-//	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-////	testImplementation 'io.projectreactor:reactor-test'
 	implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
 	implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
 	implementation 'org.springframework.data:spring-data-redis:2.3.9.RELEASE'
 	implementation 'redis.clients:jedis:3.5.2'
-
-
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	annotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {
