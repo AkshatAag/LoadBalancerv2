@@ -1,13 +1,8 @@
 package com.example.loadBalancer.service;
 
+import com.example.loadBalancer.Utils.Utils;
 import com.example.loadBalancer.entity.Call;
 import com.example.loadBalancer.entity.CallFromControlLayer;
-
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
 import com.example.loadBalancer.entity.EventFromMediaLayer;
 import com.example.loadBalancer.entity.MediaLayer;
 import com.example.loadBalancer.repository.CallRepo;
@@ -16,6 +11,9 @@ import com.example.loadBalancer.repository.MediaLayerRepo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
+import java.util.Optional;
 
 
 @org.springframework.stereotype.Service
@@ -35,17 +33,13 @@ public class Service {
         MediaLayer destination = null;
 
         List<MediaLayer> mediaLayerList = mediaLayerRepo.findAll();
-        long curTime = System.currentTimeMillis();
-        for(MediaLayer mediaLayer : mediaLayerList) {
-            mediaLayer.updateLastModified(curTime);
-        }
-        mediaLayerRepo.saveAll(mediaLayerList);
+        updateDurationOfCalls(mediaLayerList);
 
         if (mediaLayerNumber != -1) { //if this conversation already has an ongoing media layer assigned to it
             Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(mediaLayerNumber);
             destination = optionalMediaLayer.orElseThrow();
         } else {
-            destination = Collections.min(mediaLayerList);
+            destination = getMin(mediaLayerList);
             mediaLayerNumber = destination.getLayerNumber();
             loadRedis.setMediaLayer(conversationId, String.valueOf(mediaLayerNumber));
         }
@@ -57,13 +51,37 @@ public class Service {
         return "Send the call to media layer number : " + destination.getLayerNumber();
     }
 
+    private void updateDurationOfCalls(List<MediaLayer> mediaLayerList) {
+        long curTime = System.currentTimeMillis();
+        for (MediaLayer mediaLayer : mediaLayerList) {
+            mediaLayer.updateLastModified(curTime);
+        }
+        mediaLayerRepo.saveAll(mediaLayerList);
+    }
 
+    private MediaLayer getMin(List<MediaLayer> mediaLayerList) {
+        int minLayerIdx = -1;
+        long minDuration = Long.MAX_VALUE;
+        float ratio = 1;
+        
+        for (int idx = 0; idx < mediaLayerList.size(); idx++) {
+            MediaLayer curMediaLayer = mediaLayerList.get(idx);
+            int numCalls = curMediaLayer.getNumberOfCalls();
+            int maxLoad = (int) (curMediaLayer.getMaxLoad() * Utils.getNumberFromString(curMediaLayer.getStatus()));
+            float curRatio = (float) numCalls / maxLoad;
+            long curDuration = curMediaLayer.getDuration();
+            if (curRatio < ratio || (curRatio == ratio && curDuration < minDuration)) {
+                minLayerIdx = idx;
+                minDuration = curDuration;
+            }
+        }
+        return mediaLayerList.get(minLayerIdx);
+    }
 
     public int getMediaLayerNumber(CallFromControlLayer callFromControlLayer) {
         String conversationId = callFromControlLayer.getConversationId();
         return loadRedis.getMediaLayer(conversationId);
     }
-
 
     public String processEventFromMediaLayer(EventFromMediaLayer event) {
         if (event.getEventName().equals("CHANNEL_HANGUP")) {
@@ -77,7 +95,7 @@ public class Service {
             Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(mediaLayerNumber);
             MediaLayer mediaLayer = optionalMediaLayer.get();
 
-            mediaLayer.decreaseDuration(System.currentTimeMillis(),curCall.getTimeStamp());
+            mediaLayer.decreaseDuration(System.currentTimeMillis(), curCall.getTimeStamp());
             mediaLayer.decrLoad();
 
             mediaLayerRepo.save(mediaLayer);
@@ -93,4 +111,11 @@ public class Service {
     }
 
 
+    public String setServerStatus(int layerNumber, String color) {
+        Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(layerNumber);
+        MediaLayer mediaLayer = optionalMediaLayer.get();
+        mediaLayer.setStatus(color);
+        mediaLayerRepo.save(mediaLayer);
+        return "Server number " + layerNumber + " status was changed to " + color;
+    }
 }

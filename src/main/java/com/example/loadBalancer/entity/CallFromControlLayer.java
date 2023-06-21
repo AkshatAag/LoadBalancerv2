@@ -1,6 +1,5 @@
 package com.example.loadBalancer.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;

@@ -12,16 +12,24 @@ import org.springframework.web.bind.annotation.*;
 public class MyController {
     @Autowired
     private Service service;
+
     @PostMapping("/control_layer")
-    public String processEventFromControlLayer(@RequestBody CallFromControlLayer callFromControlLayer){
+    public String processEventFromControlLayer(@RequestBody CallFromControlLayer callFromControlLayer) {
         return service.processEventControlLayer(callFromControlLayer);
     }
+
     @PostMapping("/new_event")
-    public String processEventFromMediaLayer(@RequestBody EventFromMediaLayer event){
+    public String processEventFromMediaLayer(@RequestBody EventFromMediaLayer event) {
         return service.processEventFromMediaLayer(event);
     }
+
     @PostMapping("/add_new_layer")
-    public String addNewMediaLayer(@RequestBody MediaLayer mediaLayer){
+    public String addNewMediaLayer(@RequestBody MediaLayer mediaLayer) {
         return service.addNewMediaLayer(mediaLayer);
+    }
+
+    @GetMapping("/change_status/{layerNumber}/{color}")
+    public String changeServerStatus(@PathVariable int layerNumber, @PathVariable String color ){
+        return service.setServerStatus(layerNumber,color);
     }
 }

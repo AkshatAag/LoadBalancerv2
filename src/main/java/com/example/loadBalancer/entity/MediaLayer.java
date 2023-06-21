@@ -17,6 +17,7 @@ public class MediaLayer implements Comparable<MediaLayer> {
     private long duration; // total sum of durations of all the simultaneous calls going on in the media layer
     private long lastModified; // it shows the last time a new call was originated/hung-up
     private int numberOfCalls; //it tells us the current total number of calls in the media Layer
+    private int maxLoad; //defines the maximum load of a mediaLayer
     public void updateLastModified(long curTime) {
         // last modified fields and ....  to update the value of duration
         duration += (curTime - lastModified) * numberOfCalls;
@@ -32,6 +33,7 @@ public class MediaLayer implements Comparable<MediaLayer> {
     }
     @Override
     public int compareTo(MediaLayer other) {
+
         int numberOfCallsComparison = Integer.compare(this.numberOfCalls, other.numberOfCalls);
 
         if (numberOfCallsComparison != 0) {
