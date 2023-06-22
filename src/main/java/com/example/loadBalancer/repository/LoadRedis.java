@@ -8,18 +8,19 @@ import org.springframework.stereotype.Repository;
 public class LoadRedis {
     @Autowired
     private RedisTemplate template;
+
     public int getMediaLayer(String conversationId) {
-        String s= (String) template.opsForValue().get(conversationId);
-        if(s!=null) return Integer.parseInt(s);
+        String s = (String) template.opsForValue().get(conversationId);
+        if (s != null) return Integer.parseInt(s);
         return -1;
     }
 
     public void setMediaLayer(String conversationId, String res) {
-        template.opsForValue().set(conversationId,res);
+        template.opsForValue().set(conversationId, res);
     }
 
     public void setConversationId(String legId, String conversationId) {
-        template.opsForValue().set(legId,conversationId);
+        template.opsForValue().set(legId, conversationId);
     }
 
     public String getConversationId(String legId) {

@@ -29,7 +29,7 @@ public class MyController {
     }
 
     @GetMapping("/change_status/{layerNumber}/{color}")
-    public String changeServerStatus(@PathVariable int layerNumber, @PathVariable String color ){
-        return service.setServerStatus(layerNumber,color);
+    public String changeServerStatus(@PathVariable int layerNumber, @PathVariable String color) {
+        return service.setServerStatus(layerNumber, color);
     }
 }
