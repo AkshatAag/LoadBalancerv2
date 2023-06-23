@@ -1,9 +1,6 @@
 package com.example.loadBalancer.service;
 
-import com.example.loadBalancer.entity.Call;
-import com.example.loadBalancer.entity.CallFromControlLayer;
-import com.example.loadBalancer.entity.EventFromMediaLayer;
-import com.example.loadBalancer.entity.MediaLayer;
+import com.example.loadBalancer.entity.*;
 import com.example.loadBalancer.repository.CallRepo;
 import com.example.loadBalancer.repository.LoadRedis;
 import com.example.loadBalancer.repository.MediaLayerRepo;
@@ -13,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.StringTokenizer;
 
 
 @org.springframework.stereotype.Service
@@ -26,10 +24,15 @@ public class Service {
     static Logger logger = LogManager.getLogger(Service.class);
 
     public String processEventControlLayer(CallFromControlLayer callFromControlLayer) {
-        String mediaLayerNumber = getMediaLayerNumber(callFromControlLayer);
+        ConversationDetails conversationDetails = getConversationDetails(callFromControlLayer);
         String legId = callFromControlLayer.getLegId();
         String conversationId = callFromControlLayer.getConversationId();
         MediaLayer destination = null;
+        String mediaLayerNumber = null;
+
+        if(conversationDetails!=null) {
+            mediaLayerNumber = conversationDetails.getMediaLayerNumber();
+        }
 
         List<MediaLayer> mediaLayerList = mediaLayerRepo.findByFaulty(false);
         updateDurationOfCalls(mediaLayerList);
@@ -37,10 +40,13 @@ public class Service {
         if (mediaLayerNumber != null) { //if this conversation already has an ongoing media layer assigned to it
             Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(mediaLayerNumber);
             destination = optionalMediaLayer.orElseThrow();
+            increaseCallCount(conversationId);
         } else {
             destination = getMin(mediaLayerList);
             mediaLayerNumber = destination.getLayerNumber();
             loadRedis.setMediaLayer(conversationId, String.valueOf(mediaLayerNumber));
+            conversationDetails =  new ConversationDetails(1, destination.getLayerNumber(), conversationId);
+            loadRedis.saveConversationDetails(conversationDetails);
         }
 
         callRepo.save(new Call(legId, conversationId, mediaLayerNumber, System.currentTimeMillis()));
@@ -48,6 +54,17 @@ public class Service {
         destination.incrLoad();
         mediaLayerRepo.save(destination);
         return "Send the call to media layer number : " + destination.getLayerNumber();
+    }
+
+    private void increaseCallCount(String conversationId) {
+        ConversationDetails conversationDetails = loadRedis.getCoversationDetails(conversationId);
+        int legcount= conversationDetails.getLegCount();
+        conversationDetails.setLegCount(++legcount);
+        loadRedis.saveConversationDetails(conversationDetails);
+    }
+
+    private ConversationDetails getConversationDetails(CallFromControlLayer callFromControlLayer) {
+        return loadRedis.getCoversationDetails(callFromControlLayer.getLegId());
     }
 
     private void updateDurationOfCalls(List<MediaLayer> mediaLayerList) {

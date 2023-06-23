@@ -5,7 +5,7 @@ import org.springframework.data.redis.core.RedisHash;
 
 import java.io.Serializable;
 
-@RedisHash
+@RedisHash("conversations")
 public class ConversationDetails implements Serializable {
     @Id
     private String conversationID;
