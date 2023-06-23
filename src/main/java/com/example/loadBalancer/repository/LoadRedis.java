@@ -9,10 +9,8 @@ public class LoadRedis {
     @Autowired
     private RedisTemplate template;
 
-    public int getMediaLayer(String conversationId) {
-        String s = (String) template.opsForValue().get(conversationId);
-        if (s != null) return Integer.parseInt(s);
-        return -1;
+    public String getMediaLayer(String conversationId) {
+        return (String) template.opsForValue().get(conversationId);
     }
 
     public void setMediaLayer(String conversationId, String res) {

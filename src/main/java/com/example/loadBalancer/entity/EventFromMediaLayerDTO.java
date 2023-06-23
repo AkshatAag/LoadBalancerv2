@@ -1,39 +1,26 @@
 package com.example.loadBalancer.entity;
 
-import org.springframework.data.annotation.Id;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 
-
-public class EventFromMediaLayer {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class EventFromMediaLayerDTO {
+    @JsonProperty("Event-Name")
     private String eventName;
-    @Id
+    @JsonProperty("Core-UUID")
     private String coreUUID;
+    @JsonProperty("FreeSWITCH-HostName")
     private String freeSwitchHostname;
+    @JsonProperty("FreeSWITCH-SwitchName")
     private String freeSwitchSwitchname;
+    @JsonProperty("FreeSWITCH-IPv4")
     private String freeSwitchIPv4;
+    @JsonProperty("Event-Date-Local")
     private LocalDateTime eventDateLocal;
+    @JsonProperty("Relative-Time")
     private long relativeTime;
-
-    public EventFromMediaLayer(String eventName, String coreUUID, String freeSwitchHostname, String freeSwitchSwitchname, String freeSwitchIPv4, LocalDateTime eventDateLocal, long relativeTime) {
-        this.eventName = eventName;
-        this.coreUUID = coreUUID;
-        this.freeSwitchHostname = freeSwitchHostname;
-        this.freeSwitchSwitchname = freeSwitchSwitchname;
-        this.freeSwitchIPv4 = freeSwitchIPv4;
-        this.eventDateLocal = eventDateLocal;
-        this.relativeTime = relativeTime;
-    }
-
-    public EventFromMediaLayer(EventFromMediaLayerDTO eventDTO) {
-        this.coreUUID = eventDTO.getCoreUUID();
-        this.eventName = eventDTO.getEventName();
-        this.freeSwitchHostname = eventDTO.getFreeSwitchHostname();
-        this.freeSwitchSwitchname = eventDTO.getFreeSwitchSwitchname();
-        this.freeSwitchIPv4 = eventDTO.getFreeSwitchIPv4();
-        this.eventDateLocal = eventDTO.getEventDateLocal();
-        this.relativeTime = eventDTO.getRelativeTime();
-    }
 
     public String getEventName() {
         return eventName;
@@ -90,9 +77,4 @@ public class EventFromMediaLayer {
     public void setRelativeTime(long relativeTime) {
         this.relativeTime = relativeTime;
     }
-
-    public EventFromMediaLayer() {
-    }
-
-
 }
