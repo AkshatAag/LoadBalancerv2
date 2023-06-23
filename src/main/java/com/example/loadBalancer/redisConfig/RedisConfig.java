@@ -1,6 +1,5 @@
 package com.example.loadBalancer.redisConfig;
 
-import org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisPassword;
