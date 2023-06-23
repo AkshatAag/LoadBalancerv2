@@ -1,12 +1,12 @@
 package com.example.loadBalancer.Utils;
 
 public class Utils {
-    public static final float RED = 0.1F;
-    public static final float ORANGE = 0.3F;
-    public static final float YELLOW = 0.7F;
-    public static final float GREEN = 1F;
+    public static final int RED = 4;
+    public static final int ORANGE = 3;
+    public static final int YELLOW = 2;
+    public static final int GREEN = 1;
 
-    public static float getNumberFromString(String inputString) {
+    public static int getNumberFromString(String inputString) {
         // Define your mappings here
         // Example:
         if (inputString.equalsIgnoreCase("red")) {

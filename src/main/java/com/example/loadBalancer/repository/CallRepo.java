@@ -5,5 +5,5 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CallRepo extends MongoRepository<Call,String> {
+public interface CallRepo extends MongoRepository<Call, String> {
 }
