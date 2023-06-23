@@ -1,5 +1,6 @@
 package com.example.loadBalancer.redisConfig;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisPassword;
@@ -11,13 +12,19 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 public class RedisConfig {
-
+    @Value("${redis.hostname}")
+    private String hostName;
+    @Value("${redis.port}")
+    private int portNumber;
+    @Value("${redis.password}")
+    private String password;
     @Bean
-    public JedisConnectionFactory connectionFactory() {
+    public JedisConnectionFactory connectionFactory()
+    {
         RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration();
-        configuration.setHostName("redis-17535.c276.us-east-1-2.ec2.cloud.redislabs.com");
-        configuration.setPort(17535);
-        configuration.setPassword(RedisPassword.of("xpAA6VWl8e2mJuq0aaKYpDSjgnpJE0sg"));
+        configuration.setHostName(hostName);
+        configuration.setPort(portNumber);
+        configuration.setPassword(RedisPassword.of(password));
 
         return new JedisConnectionFactory(configuration);
     }
