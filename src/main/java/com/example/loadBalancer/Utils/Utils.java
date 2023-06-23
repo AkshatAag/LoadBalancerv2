@@ -1,10 +1,10 @@
 package com.example.loadBalancer.Utils;
 
 public class Utils {
-    public static final int RED = 4;
-    public static final int ORANGE = 3;
-    public static final int YELLOW = 2;
-    public static final int GREEN = 1;
+    public static final int RED = 1;
+    public static final int ORANGE = 2;
+    public static final int YELLOW = 3;
+    public static final int GREEN = 4;
 
     public static int getNumberFromString(String inputString) {
         // Define your mappings here

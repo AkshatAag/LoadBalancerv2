@@ -14,12 +14,12 @@ public class MediaLayer {
     private long duration; // total sum of durations of all the simultaneous calls going on in the media layer
     private long lastModified; // it shows the last time a new call was originated/hung-up
     private int numberOfCalls; //it tells us the current total number of calls in the media Layer
-    private int maxLoad; //defines the maximum load of a mediaLayer
+    private float maxLoad; //defines the maximum load of a mediaLayer
 
     public MediaLayer() {
     }
 
-    public MediaLayer(String layerNumber, String status, long duration, long lastModified, int numberOfCalls, int maxLoad, boolean faulty) {
+    public MediaLayer(String layerNumber, String status, long duration, long lastModified, int numberOfCalls, float maxLoad, boolean faulty) {
         this.layerNumber = layerNumber;
         this.status = status;
         this.duration = duration;
@@ -62,7 +62,7 @@ public class MediaLayer {
     public void setStatus(String status) {
         String prevStatus = this.status;
         this.status = status;
-        this.maxLoad = (int) (maxLoad * calculateMultiplier(prevStatus, status));
+        this.maxLoad = (maxLoad * calculateMultiplier(prevStatus, status));
     }
 
     private float calculateMultiplier(String prevStatus, String newStatus) {
@@ -117,11 +117,11 @@ public class MediaLayer {
         this.numberOfCalls = numberOfCalls;
     }
 
-    public int getMaxLoad() {
+    public float getMaxLoad() {
         return maxLoad;
     }
 
-    public void setMaxLoad(int maxLoad) {
+    public void setMaxLoad(float maxLoad) {
         this.maxLoad = maxLoad;
     }
 
@@ -141,5 +141,6 @@ public class MediaLayer {
 
     public void decreaseDuration(long curTime, long startTime) {
         duration = duration + numberOfCalls * (curTime - lastModified) - (curTime - startTime);
+        lastModified = curTime;
     }
 }

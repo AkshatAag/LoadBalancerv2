@@ -30,9 +30,11 @@ public class Service {
         String legId = callFromControlLayer.getLegId();
         String conversationId = callFromControlLayer.getConversationId();
         MediaLayer destination = null;
+        long curTime = System.currentTimeMillis();
+
 
         List<MediaLayer> mediaLayerList = mediaLayerRepo.findByFaulty(false);
-        updateDurationOfCalls(mediaLayerList);
+        updateDurationOfCalls(mediaLayerList,curTime);
 
         if (mediaLayerNumber != null) { //if this conversation already has an ongoing media layer assigned to it
             Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(mediaLayerNumber);
@@ -43,15 +45,14 @@ public class Service {
             loadRedis.setMediaLayer(conversationId, String.valueOf(mediaLayerNumber));
         }
 
-        callRepo.save(new Call(legId, conversationId, mediaLayerNumber, System.currentTimeMillis()));
+        callRepo.save(new Call(legId, conversationId, mediaLayerNumber, curTime));
         loadRedis.setConversationId(legId, conversationId);
         destination.incrLoad();
         mediaLayerRepo.save(destination);
         return "Send the call to media layer number : " + destination.getLayerNumber();
     }
 
-    private void updateDurationOfCalls(List<MediaLayer> mediaLayerList) {
-        long curTime = System.currentTimeMillis();
+    private void updateDurationOfCalls(List<MediaLayer> mediaLayerList,long curTime) {
         for (MediaLayer mediaLayer : mediaLayerList) {
             mediaLayer.updateLastModified(curTime);
         }
@@ -66,7 +67,7 @@ public class Service {
         for (int idx = 0; idx < mediaLayerList.size(); idx++) {
             MediaLayer curMediaLayer = mediaLayerList.get(idx);
             int numCalls = curMediaLayer.getNumberOfCalls();
-            int maxLoad = curMediaLayer.getMaxLoad();
+            float maxLoad = curMediaLayer.getMaxLoad();
             float curRatio = (float) numCalls / maxLoad;
             long curDuration = curMediaLayer.getDuration();
             if (curRatio < ratio || (curRatio == ratio && curDuration < minDuration)) {
