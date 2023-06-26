@@ -131,11 +131,11 @@ public class MediaLayer {
         lastModified = curTime;
     }
 
-    public void decrLoad() {
+    public void decrNumberOfCalls() {
         numberOfCalls = numberOfCalls - 1;
     }
 
-    public void incrLoad() {
+    public void incrNumberOfCalls() {
         numberOfCalls = numberOfCalls + 1;
     }
 

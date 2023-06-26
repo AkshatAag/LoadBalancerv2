@@ -1,12 +1,10 @@
 package com.example.loadBalancer.entity;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.io.Serializable;
-
-@RedisHash
-public class ConversationDetails implements Serializable {
+@Document(collection = "conversations")
+public class ConversationDetails {
     @Id
     private String conversationID;
     private int legCount;
@@ -44,4 +42,13 @@ public class ConversationDetails implements Serializable {
         this.conversationID = conversationID;
         this.mediaLayerNumber = mediaLayerNumber;
     }
+
+    public void incrementLegCount() {
+        legCount++;
+    }
+
+    public void decrementLegCount() {
+        legCount--;
+    }
+
 }
