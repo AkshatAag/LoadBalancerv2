@@ -9,20 +9,12 @@ public class LoadRedis {
     @Autowired
     private RedisTemplate template;
 
-    public String getMediaLayer(String conversationId) {
-        return (String) template.opsForValue().get(conversationId);
-    }
-
-    public void setMediaLayer(String conversationId, String res) {
-        template.opsForValue().set(conversationId, res);
-    }
-
-    public void setConversationId(String legId, String conversationId) {
-        template.opsForValue().set(legId, conversationId);
-    }
-
     public String getConversationId(String legId) {
         return (String) template.opsForValue().get(legId);
+    }
+
+    public void setConversationId(String legId, String res) {
+        template.opsForValue().set(legId, res);
     }
 
     public void remove(String key) {
