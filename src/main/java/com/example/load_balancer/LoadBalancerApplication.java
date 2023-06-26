@@ -1,4 +1,5 @@
-package com.example.loadBalancer;
+package com.example.load_balancer;
+
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
