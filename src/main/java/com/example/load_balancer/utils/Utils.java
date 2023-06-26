@@ -1,14 +1,16 @@
-package com.example.loadBalancer.Utils;
+package com.example.loadBalancer.utils;
 
 public class Utils {
+
+    private Utils() {
+        throw new IllegalStateException("Utility class");
+    }
     public static final int RED = 1;
     public static final int ORANGE = 2;
     public static final int YELLOW = 3;
     public static final int GREEN = 4;
 
     public static int getNumberFromString(String inputString) {
-        // Define your mappings here
-        // Example:
         if (inputString.equalsIgnoreCase("red")) {
             return RED;
         } else if (inputString.equalsIgnoreCase("orange")) {
@@ -18,9 +20,6 @@ public class Utils {
         } else if (inputString.equalsIgnoreCase("green")) {
             return GREEN;
         }
-        // Add more mappings as needed
-
-        // If no matching mapping found, return a default value or throw an exception
         return 0;
     }
 }

@@ -1,6 +1,6 @@
 package com.example.loadBalancer.entity;
 
-import com.example.loadBalancer.Utils.Utils;
+import com.example.loadBalancer.utils.Utils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
