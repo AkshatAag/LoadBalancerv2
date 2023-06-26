@@ -2,6 +2,7 @@ package com.example.load_balancer.controller;
 
 import com.example.load_balancer.entity.*;
 import com.example.load_balancer.service.Service;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +15,7 @@ public class MyController {
     public MyController(Service service) {
         this.service = service;
     }
+
 
     @PostMapping("/control_layer")
     public String processEventFromControlLayer(@RequestBody CallFromControlLayerDTO callFromControlLayerDTO) {
