@@ -5,8 +5,8 @@ import com.example.loadBalancer.repository.CallRepo;
 import com.example.loadBalancer.repository.ConversationsRepo;
 import com.example.loadBalancer.repository.LoadRedis;
 import com.example.loadBalancer.repository.MediaLayerRepo;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -23,7 +23,7 @@ public class Service {
     private MediaLayerRepo mediaLayerRepo;
     @Autowired
     private ConversationsRepo conversationsRepo;
-    static Logger logger = LogManager.getLogger(Service.class);
+    Logger logger = LoggerFactory.getLogger(Service.class);
 
     public String processEventControlLayer(CallFromControlLayer callFromControlLayer) {
 
