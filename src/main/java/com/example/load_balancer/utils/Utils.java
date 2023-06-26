@@ -1,4 +1,4 @@
-package com.example.loadBalancer.utils;
+package com.example.load_balancer.utils;
 
 public class Utils {
 

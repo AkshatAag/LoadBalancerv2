@@ -1,6 +1,6 @@
-package com.example.loadBalancer.repository;
+package com.example.load_balancer.repository;
 
-import com.example.loadBalancer.entity.Call;
+import com.example.load_balancer.entity.Call;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,6 +1,6 @@
-package com.example.loadBalancer.entity;
+package com.example.load_balancer.entity;
 
-import com.example.loadBalancer.utils.Utils;
+import com.example.load_balancer.utils.Utils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -131,11 +131,11 @@ public class MediaLayer {
         lastModified = curTime;
     }
 
-    public void decrNumberOfCalls() {
+    public void decrementNumberOfCalls() {
         numberOfCalls = numberOfCalls - 1;
     }
 
-    public void incrNumberOfCalls() {
+    public void incrementNumberOfCalls() {
         numberOfCalls = numberOfCalls + 1;
     }
 

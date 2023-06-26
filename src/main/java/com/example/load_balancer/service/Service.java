@@ -1,12 +1,10 @@
-package com.example.loadBalancer.service;
+package com.example.load_balancer.service;
 
-import com.example.loadBalancer.entity.*;
-import com.example.loadBalancer.repository.CallRepo;
-import com.example.loadBalancer.repository.ConversationsRepo;
-import com.example.loadBalancer.repository.LoadRedis;
-import com.example.loadBalancer.repository.MediaLayerRepo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.example.load_balancer.entity.*;
+import com.example.load_balancer.repository.CallRepo;
+import com.example.load_balancer.repository.ConversationsRepo;
+import com.example.load_balancer.repository.LoadRedis;
+import com.example.load_balancer.repository.MediaLayerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -15,15 +13,19 @@ import java.util.Optional;
 
 @org.springframework.stereotype.Service
 public class Service {
+
+    private final LoadRedis loadRedis;
+    private final CallRepo callRepo;
+    private final MediaLayerRepo mediaLayerRepo;
+    private final ConversationsRepo conversationsRepo;
+
     @Autowired
-    private LoadRedis loadRedis;
-    @Autowired
-    private CallRepo callRepo;
-    @Autowired
-    private MediaLayerRepo mediaLayerRepo;
-    @Autowired
-    private ConversationsRepo conversationsRepo;
-    Logger logger = LoggerFactory.getLogger(Service.class);
+    public Service(LoadRedis loadRedis, CallRepo callRepo, MediaLayerRepo mediaLayerRepo, ConversationsRepo conversationsRepo) {
+        this.loadRedis = loadRedis;
+        this.callRepo = callRepo;
+        this.mediaLayerRepo = mediaLayerRepo;
+        this.conversationsRepo = conversationsRepo;
+    }
 
     public String processEventControlLayer(CallFromControlLayer callFromControlLayer) {
 
@@ -31,7 +33,7 @@ public class Service {
         String conversationId = callFromControlLayer.getConversationId();
         Optional<ConversationDetails> optionalConversationDetails = conversationsRepo.findById(conversationId);
 
-        MediaLayer destinationMediaLayer = null;
+        MediaLayer destinationMediaLayer;
         String mediaLayerNumber;
         long curTime = System.currentTimeMillis();
         List<MediaLayer> mediaLayerList = mediaLayerRepo.findByFaulty(false);
@@ -60,7 +62,7 @@ public class Service {
             conversationsRepo.save(new ConversationDetails(1, mediaLayerNumber, conversationId));
             System.out.println("Call was added to the least loaded server");
         }
-        destinationMediaLayer.incrNumberOfCalls();
+        destinationMediaLayer.incrementNumberOfCalls();
 
         loadRedis.setConversationId(legId, conversationId);
         callRepo.save(new Call(legId, conversationId, mediaLayerNumber, curTime));
@@ -141,7 +143,7 @@ public class Service {
 
 
             mediaLayer.decreaseDuration(System.currentTimeMillis(), currentCall.getTimeStamp());
-            mediaLayer.decrNumberOfCalls();
+            mediaLayer.decrementNumberOfCalls();
 
             mediaLayerRepo.save(mediaLayer);
             return true;
@@ -158,19 +160,23 @@ public class Service {
 
     public String setServerStatus(String layerNumber, String color) {
         Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(layerNumber);
-        MediaLayer mediaLayer = optionalMediaLayer.get();
+        if (optionalMediaLayer.isPresent()) {
+            MediaLayer mediaLayer = optionalMediaLayer.get();
 
-        mediaLayer.setStatus(color);
-        mediaLayerRepo.save(mediaLayer);
+            mediaLayer.setStatus(color);
+            mediaLayerRepo.save(mediaLayer);
+        }
         return "Server number " + layerNumber + " status was changed to " + color;
     }
 
     public String setFaultyStatus(String layerNumber, boolean status) {
         Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(layerNumber);
-        MediaLayer mediaLayer = optionalMediaLayer.get();
+        if (optionalMediaLayer.isPresent()) {
+            MediaLayer mediaLayer = optionalMediaLayer.get();
 
-        mediaLayer.setFaulty(status);
-        mediaLayerRepo.save(mediaLayer);
+            mediaLayer.setFaulty(status);
+            mediaLayerRepo.save(mediaLayer);
+        }
         return "Server number " + layerNumber + " faulty status was changed to " + status;
     }
 

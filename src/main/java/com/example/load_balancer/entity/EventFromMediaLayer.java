@@ -1,4 +1,4 @@
-package com.example.loadBalancer.entity;
+package com.example.load_balancer.entity;
 
 import org.springframework.data.annotation.Id;
 

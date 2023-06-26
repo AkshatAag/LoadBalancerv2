@@ -1,4 +1,4 @@
-package com.example.load_balancer.redisConfig;
+package com.example.load_balancer.redis_config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

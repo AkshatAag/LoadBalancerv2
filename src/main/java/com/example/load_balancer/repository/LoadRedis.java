@@ -1,4 +1,4 @@
-package com.example.loadBalancer.repository;
+package com.example.load_balancer.repository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -6,11 +6,15 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class LoadRedis {
+    private final RedisTemplate<String, String> template;
+
     @Autowired
-    private RedisTemplate template;
+    public LoadRedis(RedisTemplate<String,String> template) {
+        this.template = template;
+    }
 
     public String getConversationId(String legId) {
-        return (String) template.opsForValue().get(legId);
+        return template.opsForValue().get(legId);
     }
 
     public void setConversationId(String legId, String res) {

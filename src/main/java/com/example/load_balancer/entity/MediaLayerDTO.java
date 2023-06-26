@@ -1,4 +1,4 @@
-package com.example.loadBalancer.entity;
+package com.example.load_balancer.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
