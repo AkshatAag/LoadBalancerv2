@@ -1,4 +1,4 @@
-package com.example.load_balancer.repository;
+package com.example.loadbalancer.repository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;

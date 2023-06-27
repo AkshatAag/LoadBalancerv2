@@ -1,18 +1,21 @@
-package com.example.load_balancer.controller;
+package com.example.loadbalancer.controller;
 
-import com.example.load_balancer.entity.*;
-import com.example.load_balancer.service.Service;
+import com.example.loadbalancer.dto.CallFromControlLayerDTO;
+import com.example.loadbalancer.dto.EventFromMediaLayerDTO;
+import com.example.loadbalancer.dto.MediaLayerDTO;
+import com.example.loadbalancer.entity.*;
+import com.example.loadbalancer.service.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+@org.springframework.web.bind.annotation.RestController
 @RequestMapping("controller")
-public class MyController {
+public class RestController {
     private final Service service;
 
     @Autowired
-    public MyController(Service service) {
+    public RestController(Service service) {
         this.service = service;
     }
 

@@ -1,11 +1,12 @@
-package com.example.load_balancer.service;
+package com.example.loadbalancer.service;
 
-import com.example.load_balancer.entity.*;
-import com.example.load_balancer.repository.CallRepo;
-import com.example.load_balancer.repository.ConversationsRepo;
-import com.example.load_balancer.repository.LoadRedis;
-import com.example.load_balancer.repository.MediaLayerRepo;
+import com.example.loadbalancer.entity.*;
+import com.example.loadbalancer.repository.CallRepo;
+import com.example.loadbalancer.repository.ConversationsRepo;
+import com.example.loadbalancer.repository.LoadRedis;
+import com.example.loadbalancer.repository.MediaLayerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,17 @@ public class Service {
         this.callRepo = callRepo;
         this.mediaLayerRepo = mediaLayerRepo;
         this.conversationsRepo = conversationsRepo;
+    }
+    @Scheduled(fixedDelay = 1000)
+    public void updateMongoDuration(){
+        List<MediaLayer> mediaLayerList = mediaLayerRepo.findAll();
+        for(MediaLayer mediaLayer : mediaLayerList){
+            long curTime = System.currentTimeMillis();
+            long duration = mediaLayer.getDuration()+ (curTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
+            mediaLayer.setDuration(duration);
+            mediaLayer.setLastModified(curTime);
+            mediaLayerRepo.save(mediaLayer);
+        }
     }
 
     public String processEventControlLayer(CallFromControlLayer callFromControlLayer) {
