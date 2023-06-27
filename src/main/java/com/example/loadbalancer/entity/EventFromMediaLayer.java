@@ -1,5 +1,6 @@
-package com.example.load_balancer.entity;
+package com.example.loadbalancer.entity;
 
+import com.example.loadbalancer.dto.EventFromMediaLayerDTO;
 import org.springframework.data.annotation.Id;
 
 import java.time.LocalDateTime;

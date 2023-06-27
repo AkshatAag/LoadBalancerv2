@@ -1,4 +1,4 @@
-package com.example.loadbalancer.entity;
+package com.example.loadbalancer.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

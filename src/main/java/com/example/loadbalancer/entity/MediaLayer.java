@@ -1,6 +1,7 @@
-package com.example.load_balancer.entity;
+package com.example.loadbalancer.entity;
 
-import com.example.load_balancer.utils.Utils;
+import com.example.loadbalancer.dto.MediaLayerDTO;
+import com.example.loadbalancer.utils.Utils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 

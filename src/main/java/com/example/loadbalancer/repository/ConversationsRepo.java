@@ -1,6 +1,6 @@
-package com.example.load_balancer.repository;
+package com.example.loadbalancer.repository;
 
-import com.example.load_balancer.entity.ConversationDetails;
+import com.example.loadbalancer.entity.ConversationDetails;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface ConversationsRepo extends MongoRepository<ConversationDetails, String> {

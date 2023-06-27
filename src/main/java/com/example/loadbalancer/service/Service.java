@@ -1,10 +1,10 @@
-package com.example.load_balancer.service;
+package com.example.loadbalancer.service;
 
-import com.example.load_balancer.entity.*;
-import com.example.load_balancer.repository.CallRepo;
-import com.example.load_balancer.repository.ConversationsRepo;
-import com.example.load_balancer.repository.LoadRedis;
-import com.example.load_balancer.repository.MediaLayerRepo;
+import com.example.loadbalancer.entity.*;
+import com.example.loadbalancer.repository.CallRepo;
+import com.example.loadbalancer.repository.ConversationsRepo;
+import com.example.loadbalancer.repository.LoadRedis;
+import com.example.loadbalancer.repository.MediaLayerRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 
