@@ -20,10 +20,10 @@ public class RestController {
     }
 
 
-    @PostMapping("/control_layer")
-    public String processEventFromControlLayer(@RequestBody CallFromControlLayerDTO callFromControlLayerDTO) {
+    @PostMapping("/control_layer/{alg}")
+    public String processEventFromControlLayer(@RequestBody CallFromControlLayerDTO callFromControlLayerDTO,@PathVariable int alg) {
         CallFromControlLayer callFromControlLayer = new CallFromControlLayer(callFromControlLayerDTO);
-        return service.processEventControlLayer(callFromControlLayer);
+        return service.processEventControlLayer(callFromControlLayer,alg);
     }
 
     @PostMapping("/new_event")

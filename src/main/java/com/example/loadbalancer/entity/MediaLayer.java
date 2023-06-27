@@ -5,7 +5,6 @@ import com.example.loadbalancer.utils.Utils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-
 @Document(collection = "MediaLayers")
 public class MediaLayer {
     private boolean faulty;
@@ -16,18 +15,42 @@ public class MediaLayer {
     private long lastModified; // it shows the last time a new call was originated/hung-up
     private int numberOfCalls; //it tells us the current total number of calls in the media Layer
     private float maxLoad; //defines the maximum load of a mediaLayer
+    private int ratio;
+    private long latestCallTimeStamp;
+
+    public void setRatio(int ratio) {
+        this.ratio = ratio;
+    }
+
+    public long getLatestCallTimeStamp() {
+        return latestCallTimeStamp;
+    }
+
+    public void setLatestCallTimeStamp(long latestCallTimeStamp) {
+        this.latestCallTimeStamp = latestCallTimeStamp;
+    }
+
+    public float getRatio() {
+        return ratio;
+    }
+
+    public void setRatio() {
+        this.ratio = (int)(numberOfCalls/maxLoad *10000);
+    }
 
     public MediaLayer() {
     }
 
-    public MediaLayer(String layerNumber, String status, long duration, long lastModified, int numberOfCalls, float maxLoad, boolean faulty) {
+    public MediaLayer(boolean faulty, String layerNumber, String status, long duration, long lastModified, int numberOfCalls, float maxLoad, int ratio, long latestCallTimeStamp) {
+        this.faulty = faulty;
         this.layerNumber = layerNumber;
         this.status = status;
         this.duration = duration;
         this.lastModified = lastModified;
         this.numberOfCalls = numberOfCalls;
         this.maxLoad = maxLoad;
-        this.faulty = faulty;
+        this.ratio = ratio;
+        this.latestCallTimeStamp = latestCallTimeStamp;
     }
 
     public MediaLayer(MediaLayerDTO mediaLayerDTO) {
@@ -38,6 +61,8 @@ public class MediaLayer {
         this.numberOfCalls = mediaLayerDTO.getNumberOfCalls();
         this.maxLoad = mediaLayerDTO.getMaxLoad();
         this.faulty = mediaLayerDTO.isFaulty();
+        this.ratio = mediaLayerDTO.getRatio();
+        this.latestCallTimeStamp= mediaLayerDTO.getLatestCallTimeStamp();
     }
 
     public boolean isFaulty() {
@@ -143,5 +168,11 @@ public class MediaLayer {
     public void decreaseDuration(long curTime, long startTime) {
         duration = duration + numberOfCalls * (curTime - lastModified) - (curTime - startTime);
         lastModified = curTime;
+    }
+
+    public void updateDetails() {
+        incrementNumberOfCalls();
+        setRatio();
+        setLatestCallTimeStamp(System.currentTimeMillis());
     }
 }
