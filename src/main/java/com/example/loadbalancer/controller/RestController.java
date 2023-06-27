@@ -6,13 +6,13 @@ import com.example.load_balancer.service.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+@org.springframework.web.bind.annotation.RestController
 @RequestMapping("controller")
-public class MyController {
+public class RestController {
     private final Service service;
 
     @Autowired
-    public MyController(Service service) {
+    public RestController(Service service) {
         this.service = service;
     }
 
