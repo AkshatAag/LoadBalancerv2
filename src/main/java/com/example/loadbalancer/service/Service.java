@@ -10,10 +10,14 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 
 @org.springframework.stereotype.Service
 public class Service {
+
+    private static final int LEAST_CONNECTIONS = 1;
+    private static final int ROUND_ROBIN = 2;
 
     private final LoadRedis loadRedis;
     private final CallRepo callRepo;
@@ -27,7 +31,7 @@ public class Service {
         this.mediaLayerRepo = mediaLayerRepo;
         this.conversationsRepo = conversationsRepo;
     }
-    @Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 5,initialDelay = 0, timeUnit = TimeUnit.SECONDS)
     public void updateMongoDuration(){
         List<MediaLayer> mediaLayerList = mediaLayerRepo.findAll();
         for(MediaLayer mediaLayer : mediaLayerList){
@@ -35,11 +39,12 @@ public class Service {
             long duration = mediaLayer.getDuration()+ (curTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
             mediaLayer.setDuration(duration);
             mediaLayer.setLastModified(curTime);
+            mediaLayer.setRatio();
             mediaLayerRepo.save(mediaLayer);
         }
     }
 
-    public String processEventControlLayer(CallFromControlLayer callFromControlLayer) {
+    public String processEventControlLayer(CallFromControlLayer callFromControlLayer,int alg) {
 
         String legId = callFromControlLayer.getLegId();
         String conversationId = callFromControlLayer.getConversationId();
@@ -47,9 +52,6 @@ public class Service {
 
         MediaLayer destinationMediaLayer;
         String mediaLayerNumber;
-        long curTime = System.currentTimeMillis();
-        List<MediaLayer> mediaLayerList = mediaLayerRepo.findByFaulty(false);
-        updateDurationOfCalls(mediaLayerList, curTime);
 
         if (optionalConversationDetails.isPresent()) { //if this conversation already has an ongoing media layer assigned to it
             ConversationDetails conversationDetails = optionalConversationDetails.get();
@@ -68,47 +70,35 @@ public class Service {
 
             System.out.println("Call was added to ongoing conversation");
         } else {
-            destinationMediaLayer = getMin(mediaLayerList);
+            destinationMediaLayer = getLeastLoaded(alg);
             mediaLayerNumber = destinationMediaLayer.getLayerNumber();
 
             conversationsRepo.save(new ConversationDetails(1, mediaLayerNumber, conversationId));
             System.out.println("Call was added to the least loaded server");
         }
-        destinationMediaLayer.incrementNumberOfCalls();
+
+        destinationMediaLayer.updateDetails();
 
         loadRedis.setConversationId(legId, conversationId);
-        callRepo.save(new Call(legId, conversationId, mediaLayerNumber, curTime));
+        callRepo.save(new Call(legId, conversationId, mediaLayerNumber, System.currentTimeMillis()));
         mediaLayerRepo.save(destinationMediaLayer);
 
         return "Send the call to media layer number : " + destinationMediaLayer.getLayerNumber();
     }
 
-    private void updateDurationOfCalls(List<MediaLayer> mediaLayerList, long curTime) {
-        for (MediaLayer mediaLayer : mediaLayerList) {
-            mediaLayer.updateLastModified(curTime);
+
+
+    private MediaLayer getLeastLoaded(int alg) {
+        switch (alg) {
+            case LEAST_CONNECTIONS:
+                return mediaLayerRepo.findDestinationLeastConnections();
+            case ROUND_ROBIN:
+                return mediaLayerRepo.findDestinationRoundRobin();
+            default:
+                return null;
         }
-        mediaLayerRepo.saveAll(mediaLayerList);
     }
 
-    private MediaLayer getMin(List<MediaLayer> mediaLayerList) {
-        int minLayerIdx = -1;
-        long minDuration = Long.MAX_VALUE;
-        float ratio = 1;
-
-        for (int idx = 0; idx < mediaLayerList.size(); idx++) {
-            MediaLayer curMediaLayer = mediaLayerList.get(idx);
-            int numCalls = curMediaLayer.getNumberOfCalls();
-            float maxLoad = curMediaLayer.getMaxLoad();
-            float curRatio = numCalls / maxLoad;
-            long curDuration = curMediaLayer.getDuration();
-            if (curRatio < ratio || (curRatio == ratio && curDuration < minDuration)) {
-                minLayerIdx = idx;
-                minDuration = curDuration;
-                ratio = curRatio;
-            }
-        }
-        return mediaLayerList.get(minLayerIdx);
-    }
 
     public String processEventFromMediaLayer(EventFromMediaLayer event) {
         boolean flag = false;

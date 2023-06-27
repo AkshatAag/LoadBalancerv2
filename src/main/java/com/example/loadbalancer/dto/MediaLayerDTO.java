@@ -12,6 +12,24 @@ public class MediaLayerDTO {
     private int numberOfCalls = 0; //it tells us the current total number of calls in the media Layer
     private int maxLoad = 10; //defines the maximum load of a mediaLayer
     private boolean faulty = false;
+    private int ratio = 0;
+    private long latestCallTimeStamp = 0;
+
+    public long getLatestCallTimeStamp() {
+        return latestCallTimeStamp;
+    }
+
+    public void setLatestCallTimeStamp(long latestCallTimeStamp) {
+        this.latestCallTimeStamp = latestCallTimeStamp;
+    }
+
+    public int getRatio() {
+        return ratio;
+    }
+
+    public void setRatio(int ratio) {
+        this.ratio = ratio;
+    }
 
     public boolean isFaulty() {
         return faulty;
