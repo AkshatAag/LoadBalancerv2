@@ -12,13 +12,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-
 @org.springframework.stereotype.Service
 public class Service {
 
     private static final int LEAST_CONNECTIONS = 1;
     private static final int ROUND_ROBIN = 2;
-
     private final LoadRedis loadRedis;
     private final CallRepo callRepo;
     private final MediaLayerRepo mediaLayerRepo;
@@ -31,20 +29,21 @@ public class Service {
         this.mediaLayerRepo = mediaLayerRepo;
         this.conversationsRepo = conversationsRepo;
     }
-    @Scheduled(fixedDelay = 5,initialDelay = 0, timeUnit = TimeUnit.SECONDS)
-    public void updateMongoDuration(){
+
+    @Scheduled(fixedDelay = 5, initialDelay = 0, timeUnit = TimeUnit.SECONDS)
+    public void updateMongoDuration() {
         List<MediaLayer> mediaLayerList = mediaLayerRepo.findAll();
-        for(MediaLayer mediaLayer : mediaLayerList){
+        for (MediaLayer mediaLayer : mediaLayerList) {
             long curTime = System.currentTimeMillis();
-            long duration = mediaLayer.getDuration()+ (curTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
+            long duration = mediaLayer.getDuration() + (curTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
             mediaLayer.setDuration(duration);
             mediaLayer.setLastModified(curTime);
             mediaLayer.setRatio();
-            mediaLayerRepo.save(mediaLayer);
         }
+        mediaLayerRepo.saveAll(mediaLayerList);
     }
 
-    public String processEventControlLayer(CallFromControlLayer callFromControlLayer,int alg) {
+    public String processEventControlLayer(CallFromControlLayer callFromControlLayer, int alg) {
 
         String legId = callFromControlLayer.getLegId();
         String conversationId = callFromControlLayer.getConversationId();
@@ -66,27 +65,26 @@ public class Service {
             mediaLayerNumber = conversationDetails.getMediaLayerNumber();
             conversationDetails.incrementLegCount();
 
-            conversationsRepo.save(conversationDetails);
+            new Thread(() -> conversationsRepo.save(conversationDetails)).start();
 
             System.out.println("Call was added to ongoing conversation");
         } else {
             destinationMediaLayer = getLeastLoaded(alg);
             mediaLayerNumber = destinationMediaLayer.getLayerNumber();
 
-            conversationsRepo.save(new ConversationDetails(1, mediaLayerNumber, conversationId));
+            new Thread(() -> conversationsRepo.save(new ConversationDetails(1, mediaLayerNumber, conversationId))).start();
             System.out.println("Call was added to the least loaded server");
         }
 
         destinationMediaLayer.updateDetails();
-
-        loadRedis.setConversationId(legId, conversationId);
-        callRepo.save(new Call(legId, conversationId, mediaLayerNumber, System.currentTimeMillis()));
-        mediaLayerRepo.save(destinationMediaLayer);
+        new Thread(() -> {
+            callRepo.save(new Call(legId, conversationId, mediaLayerNumber, System.currentTimeMillis()));
+            loadRedis.setConversationId(legId, conversationId);
+            mediaLayerRepo.save(destinationMediaLayer);
+        }).start();
 
         return "Send the call to media layer number : " + destinationMediaLayer.getLayerNumber();
     }
-
-
 
     private MediaLayer getLeastLoaded(int alg) {
         switch (alg) {
@@ -111,24 +109,33 @@ public class Service {
 
     private boolean handleHangupEvent(EventFromMediaLayer event) {
 
-        String conversationId = loadRedis.getConversationId(event.getCoreUUID());
-        String legId = event.getCoreUUID();
+        Optional<Call> optionalCall = callRepo.findById(event.getCoreUUID());
+        Call currentCall;
+        if (optionalCall.isPresent()) {
+            currentCall = optionalCall.get();
+        } else {
+            return false;
+        }
+        String conversationId = currentCall.getConversationId();
+        String legId = currentCall.getCallId();
         Optional<ConversationDetails> optionalConversationDetails = conversationsRepo.findById(conversationId);
-        Optional<Call> optionalCurrentCall = callRepo.findById(legId);
 
-        if (optionalConversationDetails.isPresent() && optionalCurrentCall.isPresent()) {
+        if (optionalConversationDetails.isPresent()) {
             ConversationDetails conversationDetails = optionalConversationDetails.get();
-            Call currentCall = optionalCurrentCall.get();
 
-            callRepo.deleteById(legId);
-            loadRedis.remove(legId);
+            new Thread(() -> {
+                callRepo.deleteById(legId);
+                loadRedis.remove(legId);
+            }).start();
             conversationDetails.decrementLegCount();
 
-            if (conversationDetails.getLegCount() == 0) {
-                conversationsRepo.deleteById(conversationId);
-            } else {
-                conversationsRepo.save(conversationDetails);
-            }
+            new Thread(() -> {
+                if (conversationDetails.getLegCount() == 0) {
+                    conversationsRepo.deleteById(conversationId);
+                } else {
+                    conversationsRepo.save(conversationDetails);
+                }
+            }).start();
 
             return updateMediaLayerDatabaseHangupEvent(conversationDetails, currentCall);
 
@@ -141,13 +148,15 @@ public class Service {
     private Boolean updateMediaLayerDatabaseHangupEvent(ConversationDetails conversationDetails, Call currentCall) {
         Optional<MediaLayer> optionalMediaLayer = mediaLayerRepo.findById(conversationDetails.getMediaLayerNumber());
         if (optionalMediaLayer.isPresent()) {
-            MediaLayer mediaLayer = optionalMediaLayer.get();
+            new Thread(() -> {
+                MediaLayer mediaLayer = optionalMediaLayer.get();
 
 
-            mediaLayer.decreaseDuration(System.currentTimeMillis(), currentCall.getTimeStamp());
-            mediaLayer.decrementNumberOfCalls();
+                mediaLayer.decreaseDuration(System.currentTimeMillis(), currentCall.getTimeStamp());
+                mediaLayer.decrementNumberOfCalls();
 
-            mediaLayerRepo.save(mediaLayer);
+                mediaLayerRepo.save(mediaLayer);
+            }).start();
             return true;
         } else {
             return false;
