@@ -9,6 +9,8 @@ public class Utils {
     public static final int ORANGE = 2;
     public static final int YELLOW = 3;
     public static final int GREEN = 4;
+    public static final int LEAST_CONNECTIONS = 1;
+    public static final int ROUND_ROBIN = 2;
 
     public static int getNumberFromString(String inputString) {
         if (inputString.equalsIgnoreCase("red")) {
