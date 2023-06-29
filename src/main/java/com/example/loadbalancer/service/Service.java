@@ -11,9 +11,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.example.loadbalancer.utils.Utils.*;
@@ -56,7 +54,7 @@ public class Service {
         String legId = callFromControlLayer.getLegId();
         String conversationId = callFromControlLayer.getConversationId();
         Call call = mongoTemplate.findById(legId, Call.class);
-        if(call!=null) return call.getMediaLayerNumber();
+        if (call != null) return call.getMediaLayerNumber();
         ConversationDetails conversationDetails = mongoTemplate.findById(conversationId, ConversationDetails.class);
 
         MediaLayer destinationMediaLayer;
@@ -81,9 +79,9 @@ public class Service {
         }
 
         new Thread(() -> {
-            long currentTime=System.currentTimeMillis();
+            long currentTime = System.currentTimeMillis();
             mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
-            updateMediaLayerNewCall(destinationMediaLayer,currentTime);
+            updateMediaLayerNewCall(destinationMediaLayer, currentTime);
             mongoTemplate.save(destinationMediaLayer);
         }).start();
 
@@ -96,7 +94,7 @@ public class Service {
         mediaLayerNumber = destinationMediaLayer.getLayerNumber();
 
         mongoTemplate.save(new ConversationDetails(1, mediaLayerNumber, conversationId));
-        System.out.println("Call was added to the least loaded server");
+        logger.info("Call was added to the least loaded server");
         return mediaLayerNumber;
     }
 
@@ -131,8 +129,7 @@ public class Service {
         if (flag) {
             logger.info("Media Layer event was processed");
             return HttpStatus.OK.toString();
-        }
-        else{
+        } else {
             logger.error("Unable to process media layer event");
             return HttpStatus.BAD_REQUEST.toString();
         }
@@ -205,8 +202,7 @@ public class Service {
         if (mediaLayer != null) {
             mediaLayer.setStatus(color);
             mongoTemplate.save(mediaLayer);
-        }
-        else {
+        } else {
             logger.error("No currently running Media Server with this layer number exists");
             return HttpStatus.BAD_REQUEST.toString();
         }
@@ -220,8 +216,7 @@ public class Service {
         if (mediaLayer != null) {
             mediaLayer.setFaulty(status);
             mongoTemplate.save(mediaLayer);
-        }
-        else {
+        } else {
             logger.error("No currently running Media Server with this layer number exists");
             return HttpStatus.BAD_REQUEST.toString();
         }
