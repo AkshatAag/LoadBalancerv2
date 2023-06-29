@@ -17,13 +17,16 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
 	implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
-	implementation 'org.springframework.data:spring-data-redis:2.3.9.RELEASE'
-	implementation 'redis.clients:jedis:3.5.2'
+//	implementation 'org.springframework.data:spring-data-redis:2.3.9.RELEASE'
+//	implementation 'redis.clients:jedis:3.5.2'
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
-	compileOnly 'org.projectlombok:lombok'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	annotationProcessor 'org.projectlombok:lombok'
+//	compileOnly 'org.projectlombok:lombok'
+//	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+//	annotationProcessor 'org.projectlombok:lombok'
 	implementation group: 'org.mongodb', name: 'mongodb-driver-sync', version: '4.6.1'
+// https://mvnrepository.com/artifact/de.flapdoodle.embed/de.flapdoodle.embed.mongo
+	testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.5.4'
+	testImplementation 'junit:junit:4.13.1'
 
 }
 

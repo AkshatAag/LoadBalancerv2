@@ -170,9 +170,5 @@ public class MediaLayer {
         lastModified = curTime;
     }
 
-    public void updateDetails() {
-        incrementNumberOfCalls();
-        setRatio();
-        setLatestCallTimeStamp(System.currentTimeMillis());
-    }
+
 }
