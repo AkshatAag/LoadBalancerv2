@@ -3,7 +3,7 @@ package com.example.loadbalancer.entity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "conversations")
+@Document(collection = "Conversations")
 public class ConversationDetails {
     @Id
     private String conversationID;
