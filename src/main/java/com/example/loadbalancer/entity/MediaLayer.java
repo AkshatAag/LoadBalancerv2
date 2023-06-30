@@ -85,14 +85,20 @@ public class MediaLayer {
         return status;
     }
 
-    public void setStatus(String status) {
+    public boolean setStatus(String status) {
         String prevStatus = this.status;
+        float multiplier = calculateMultiplier(prevStatus, status);
+        if (multiplier == 0) {
+            return false;
+        }
         this.status = status;
-        this.maxLoad = (maxLoad * calculateMultiplier(prevStatus, status));
+        this.maxLoad = (maxLoad * multiplier);
+        return true;
     }
 
     private float calculateMultiplier(String prevStatus, String newStatus) {
         int diff = Utils.getNumberFromString(newStatus) - Utils.getNumberFromString(prevStatus);
+        if(Utils.getNumberFromString(newStatus)==0) return 0F;
         float res;
         switch (diff) {
             case -3:

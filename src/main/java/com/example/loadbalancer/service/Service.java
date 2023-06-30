@@ -9,10 +9,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static com.example.loadbalancer.utils.Utils.*;
 
@@ -64,19 +60,16 @@ public class Service {
         }
         long currentTime = System.currentTimeMillis();
         Thread th1 = new Thread(()->mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime)));
-        Thread th2 = new Thread(()->updateMediaLayerNewCall(destinationMediaLayer, currentTime));
-        Thread th3 = new Thread(()->mongoTemplate.save(destinationMediaLayer));
-        return invokeThreadsPerformDatabaseOperations(destinationMediaLayer, th1, th2, th3);
+        Thread th2 = new Thread(()->updateMediaLayerNewCall(destinationMediaLayer, currentTime,mongoTemplate));
+        return invokeThreadsPerformDatabaseOperations(destinationMediaLayer, th1, th2);
     }
 
-    private String invokeThreadsPerformDatabaseOperations(MediaLayer destinationMediaLayer, Thread th1, Thread th2, Thread th3) {
+    private String invokeThreadsPerformDatabaseOperations(MediaLayer destinationMediaLayer, Thread th1, Thread th2) {
         th1.start();
         th2.start();
-        th3.start();
         try {
             th1.join();
             th2.join();
-            th3.join();
             return destinationMediaLayer.getLayerNumber();
         } catch (InterruptedException e) {
             logger.error(e.toString());
@@ -95,10 +88,14 @@ public class Service {
         return mediaLayerNumber;
     }
 
-    private void updateMediaLayerNewCall(MediaLayer destinationMediaLayer, long currentTime) {
-        destinationMediaLayer.incrementNumberOfCalls();
-        destinationMediaLayer.setRatio();
-        destinationMediaLayer.setLatestCallTimeStamp(currentTime);
+    private void updateMediaLayerNewCall(MediaLayer mediaLayer, long currentTime, MongoTemplate mongoTemplate) {
+        long duration = mediaLayer.getDuration() + (currentTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
+        mediaLayer.incrementNumberOfCalls();
+        mediaLayer.setRatio();
+        mediaLayer.setLatestCallTimeStamp(currentTime);
+        mediaLayer.setDuration(duration);
+        mediaLayer.setLastModified(currentTime);
+        mongoTemplate.save(mediaLayer);
     }
 
     private MediaLayer getLeastLoaded(int alg) {
@@ -139,7 +136,7 @@ public class Service {
         if (currentCall == null) {
             //there is no ongoing call with that call id
             logger.error("FALSE POSITIVE HANGUP EVENT");
-            return true;
+            return false;
         }
         String conversationId = currentCall.getConversationId();
         String legId = currentCall.getCallId();
@@ -156,7 +153,7 @@ public class Service {
             //there exists a call, but it has no corresponding conversation going on, so we delete that call.
             deleteById(currentCall.getCallId(), Call.class);
             logger.error("NO ONGOING CONVERSATION FOR THIS CALL ID");
-            return true;
+            return false;
         }
     }
 
@@ -197,13 +194,18 @@ public class Service {
         //sets the load category of the media server
         MediaLayer mediaLayer = mongoTemplate.findById(layerNumber, MediaLayer.class);
         if (mediaLayer != null) {
-            mediaLayer.setStatus(color);
-            mongoTemplate.save(mediaLayer);
+            if(mediaLayer.setStatus(color)) {
+                logger.info("Color status was changed");
+                mongoTemplate.save(mediaLayer);
+            }
+            else {
+                logger.info("status was not changed");
+                return HttpStatus.BAD_REQUEST.toString();
+            }
         } else {
             logger.error("No currently running Media Server with this layer number exists");
             return HttpStatus.BAD_REQUEST.toString();
         }
-        logger.info("Faulty status was changed");
         return HttpStatus.OK.toString();
     }
 
