@@ -65,7 +65,7 @@ public class Service {
             destinationMediaLayer = mongoTemplate.findById(conversationDetails.getMediaLayerNumber(), MediaLayer.class);
             if (destinationMediaLayer == null) {
                 logger.error("Conversation is going on but unable to find corresponding media layer");
-                return "-1";
+                return HttpStatus.INTERNAL_SERVER_ERROR.toString();
             }
             mediaLayerNumber = conversationDetails.getMediaLayerNumber();
             conversationDetails.incrementLegCount();
@@ -74,18 +74,33 @@ public class Service {
             logger.info("Call was added to ongoing conversation");
         } else {
             destinationMediaLayer = getLeastLoaded(alg);
-            assert destinationMediaLayer != null;
+            if (destinationMediaLayer == null) {
+                logger.error("Conversation is going on but unable to find corresponding media layer");
+                return "-1";
+            }
             mediaLayerNumber = assignLayerToNewConversation(conversationId, destinationMediaLayer);
         }
+        long currentTime = System.currentTimeMillis();
+        Thread th1 = new Thread(()->mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime)));
+        Thread th2 = new Thread(()->updateMediaLayerNewCall(destinationMediaLayer, currentTime));
+        Thread th3 = new Thread(()->mongoTemplate.save(destinationMediaLayer));
+        return invokeThreadsPerformDatabaseOperations(destinationMediaLayer, th1, th2, th3);
+    }
 
-        new Thread(() -> {
-            long currentTime = System.currentTimeMillis();
-            mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
-            updateMediaLayerNewCall(destinationMediaLayer, currentTime);
-            mongoTemplate.save(destinationMediaLayer);
-        }).start();
-
-        return destinationMediaLayer.getLayerNumber();
+    private String invokeThreadsPerformDatabaseOperations(MediaLayer destinationMediaLayer, Thread th1, Thread th2, Thread th3) {
+        th1.start();
+        th2.start();
+        th3.start();
+        try {
+            th1.join();
+            th2.join();
+            th3.join();
+            return destinationMediaLayer.getLayerNumber();
+        } catch (InterruptedException e) {
+            logger.error(e.toString());
+            Thread.currentThread().interrupt();
+            return "-1";
+        }
     }
 
     private String assignLayerToNewConversation(String conversationId, MediaLayer destinationMediaLayer) {

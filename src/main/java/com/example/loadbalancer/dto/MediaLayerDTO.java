@@ -15,6 +15,10 @@ public class MediaLayerDTO {
     private int ratio = 0;
     private long latestCallTimeStamp = 0;
 
+    public MediaLayerDTO(String layerNumber) {
+        this.layerNumber = layerNumber;
+    }
+
     public long getLatestCallTimeStamp() {
         return latestCallTimeStamp;
     }
