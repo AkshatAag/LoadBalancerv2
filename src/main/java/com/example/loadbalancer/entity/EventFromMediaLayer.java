@@ -26,6 +26,11 @@ public class EventFromMediaLayer {
         this.relativeTime = relativeTime;
     }
 
+    public EventFromMediaLayer(String coreUUID,String eventName) {
+        this.eventName = eventName;
+        this.coreUUID = coreUUID;
+    }
+
     public EventFromMediaLayer(EventFromMediaLayerDTO eventDTO) {
         this.coreUUID = eventDTO.getCoreUUID();
         this.eventName = eventDTO.getEventName();
