@@ -30,24 +30,6 @@ public class Service {
         mongoTemplate.remove(Query.query(Criteria.where(FIELD_ID).is(id)), entityClass);
     }
 
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = 0, timeUnit = TimeUnit.SECONDS)
-    public void refreshDatabaseMongo() {
-        //updates the duration and lastModified fields of the database every few seconds
-        List<MediaLayer> mediaLayerList = mongoTemplate.findAll(MediaLayer.class);
-        for (MediaLayer mediaLayer : mediaLayerList) {
-            refreshMediaLayerAttributes(mediaLayer);
-            mongoTemplate.save(mediaLayer);
-        }
-    }
-
-    private static void refreshMediaLayerAttributes(MediaLayer mediaLayer) {
-        //updates the media layer attributes as per real time.
-        long curTime = System.currentTimeMillis();
-        long duration = mediaLayer.getDuration() + (curTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
-        mediaLayer.setDuration(duration);
-        mediaLayer.setLastModified(curTime);
-        mediaLayer.setRatio();
-    }
 
     public String processEventControlLayer(CallFromControlLayer callFromControlLayer, int alg) {
 

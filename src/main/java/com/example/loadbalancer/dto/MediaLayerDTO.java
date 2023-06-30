@@ -19,6 +19,9 @@ public class MediaLayerDTO {
         this.layerNumber = layerNumber;
     }
 
+    public MediaLayerDTO() {
+    }
+
     public long getLatestCallTimeStamp() {
         return latestCallTimeStamp;
     }
