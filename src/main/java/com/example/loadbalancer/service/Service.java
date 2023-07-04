@@ -129,7 +129,7 @@ public class Service {
         }
     }
 
-    private boolean handleEventHangup(EventFromMediaLayer event) {
+    public boolean handleEventHangup(EventFromMediaLayer event) {
         //handles the hangup events
 
         Call currentCall = mongoTemplate.findById(event.getCoreUUID(), Call.class);

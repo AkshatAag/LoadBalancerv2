@@ -7,6 +7,7 @@ public class Utils {
     public static final String FIELD_RATIO = "ratio";
     public static final String FIELD_LATEST_CALL_TIME_STAMP = "latestCallTimeStamp";
     public static final String FIELD_DURATION = "duration";
+    public static final int GENERATE_AUTOHANGUP = 10;
 
     private Utils() {
         throw new IllegalStateException("Utility class");
