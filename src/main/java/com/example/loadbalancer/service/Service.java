@@ -27,7 +27,7 @@ public class Service {
     }
 
 
-    public String processEventControlLayer(CallFromControlLayer callFromControlLayer, int alg) {
+    public String processEventControlLayer(CallFromControlLayer callFromControlLayer, String alg) {
 
         String legId = callFromControlLayer.getLegId();
         String conversationId = callFromControlLayer.getConversationId();
@@ -98,9 +98,9 @@ public class Service {
         mongoTemplate.save(mediaLayer);
     }
 
-    private MediaLayer getLeastLoaded(int alg) {
+    private MediaLayer getLeastLoaded(String alg) {
         //RETURNS THE LEAST LOADED MEDIA LAYER SERVER BASED ON THE ALGORITHM.
-        switch (alg) {
+        switch (Integer.parseInt(alg)) {
             case LEAST_CONNECTIONS:
                 Query queryLeastConnections = new Query(Criteria.where(FIELD_FAULTY).is(false)).with(Sort.by(Sort.Direction.ASC, FIELD_RATIO).and(Sort.by(Sort.Direction.ASC, FIELD_DURATION))).limit(1);
                 return mongoTemplate.findOne(queryLeastConnections, MediaLayer.class);

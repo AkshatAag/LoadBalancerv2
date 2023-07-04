@@ -27,14 +27,19 @@ public class RestController {
     public RestController(Service service) {
         this.service = service;
     }
+    @GetMapping("/hi")
+    public String hello(){
+        return "hi";
+    }
 
 
     @PostMapping("/control_layer/{alg}")
     public String processEventFromControlLayer(@RequestBody @Valid CallFromControlLayerDTO callFromControlLayerDTO,
-                                               @PathVariable
+                                               @PathVariable(required = false)
                                                @Min(value = 1, message = "Select an algorithm between 1-2")
-                                               @Max(value = 2, message = "Select an algorithm between 1-2") int alg) {
+                                               @Max(value = 2, message = "Select an algorithm between 1-2") String alg) {
         //return the destination media layer server's number
+        if(alg==null) alg = "1";
         CallFromControlLayer callFromControlLayer = new CallFromControlLayer(callFromControlLayerDTO);
         return service.processEventControlLayer(callFromControlLayer, alg);
     }

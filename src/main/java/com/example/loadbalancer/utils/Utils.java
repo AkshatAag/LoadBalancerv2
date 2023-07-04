@@ -8,7 +8,6 @@ public class Utils {
     public static final String FIELD_LATEST_CALL_TIME_STAMP = "latestCallTimeStamp";
     public static final String FIELD_DURATION = "duration";
     public static final int GENERATE_AUTOHANGUP = 10;
-    public static final int MAX_DURATION_OF_CALL = 2 * 60 * 60 * 1000;
 
     private Utils() {
         throw new IllegalStateException("Utility class");

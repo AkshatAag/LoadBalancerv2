@@ -44,7 +44,7 @@ public class ScheduledClass {
 
     @Scheduled(fixedDelay = Utils.GENERATE_AUTOHANGUP, timeUnit = TimeUnit.MINUTES)
     public void hangupCalls() {
-        long cutoff = System.currentTimeMillis() - Utils.MAX_DURATION_OF_CALL;
+        long cutoff = System.currentTimeMillis() - 2 * 60 * 60 * 1000;
 
         Query query = new Query(Criteria.where("fieldName").gt(cutoff));
         List<Call> callList = mongoTemplate.find(query, Call.class);
