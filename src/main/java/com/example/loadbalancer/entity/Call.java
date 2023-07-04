@@ -12,7 +12,6 @@ public class Call {
     private String conversationId;
     private String mediaLayerNumber;
     private long timeStamp;
-
     public Call() {
     }
 
@@ -21,6 +20,16 @@ public class Call {
         this.conversationId = conversationId;
         this.mediaLayerNumber = mediaLayerNumber;
         this.timeStamp = timeStamp;
+    }
+
+    @Override
+    public String toString() {
+        return "Call{" +
+                "callId='" + callId + '\'' +
+                ", conversationId='" + conversationId + '\'' +
+                ", mediaLayerNumber='" + mediaLayerNumber + '\'' +
+                ", timeStamp=" + timeStamp +
+                '}';
     }
 
     public String getCallId() {

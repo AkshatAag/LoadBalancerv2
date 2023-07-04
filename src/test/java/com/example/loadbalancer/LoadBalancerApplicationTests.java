@@ -1,7 +1,10 @@
 package com.example.loadbalancer;
 
 import com.example.loadbalancer.dto.MediaLayerDTO;
-import com.example.loadbalancer.entity.*;
+import com.example.loadbalancer.entity.Call;
+import com.example.loadbalancer.entity.CallFromControlLayer;
+import com.example.loadbalancer.entity.EventFromMediaLayer;
+import com.example.loadbalancer.entity.MediaLayer;
 import com.example.loadbalancer.service.Service;
 import com.mongodb.client.MongoClients;
 import de.flapdoodle.embed.mongo.MongodExecutable;
@@ -11,27 +14,33 @@ import de.flapdoodle.embed.mongo.config.MongodConfig;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@AutoConfigureMockMvc
 @SpringBootTest(classes = {LoadBalancerApplicationTests.class})
 class LoadBalancerApplicationTests {
 
-    @Test
-    void contextLoads() {
-    }
     private static final String CONNECTION_STRING = "mongodb://%s:%d";
     private static MongodExecutable mongodExecutable;
     private static Service mockService;
     private static MongoTemplate mongoTemplate;
+    @Autowired
+    private MockMvc mockMvc;
 
     @AfterAll
     static void clean() {
@@ -52,11 +61,14 @@ class LoadBalancerApplicationTests {
         mockService = new Service(mongoTemplate);
     }
 
+    @Test
+    void contextLoads() {
+    }
+
     @AfterEach
     void clearDatabase() {
         mongoTemplate.remove(new Query(), MediaLayer.class);
         mongoTemplate.remove(new Query(), Call.class);
-        mongoTemplate.remove(new Query(), ConversationDetails.class);
     }
 
     @Test
@@ -71,16 +83,15 @@ class LoadBalancerApplicationTests {
     @Test
     void newCallWhenNoExistingMediaLayerPresent() {
         mongoTemplate.remove(new Query(), MediaLayer.class);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.toString(), mockService.processEventControlLayer(new CallFromControlLayer("3", "b"), 1));
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.toString(), mockService.processEventControlLayer(new CallFromControlLayer("3", "b"), "1"));
     }
 
     @Test
     void sameControlLayerCallMultipleTimes() {
         mockService.addNewMediaLayer(new MediaLayer(new MediaLayerDTO("1")));
-        mockService.processEventControlLayer(new CallFromControlLayer("1", "b"), 1);
-        mockService.processEventControlLayer(new CallFromControlLayer("1", "b"), 1);
+        mockService.processEventControlLayer(new CallFromControlLayer("1", "b"), "1");
+        mockService.processEventControlLayer(new CallFromControlLayer("1", "b"), "1");
         assertEquals(1, mongoTemplate.findAll(Call.class).size());
-        assertEquals(1, mongoTemplate.findAll(ConversationDetails.class).size());
         assertEquals(Objects.requireNonNull(mongoTemplate.findById("1", MediaLayer.class)).getDuration(), (long) 0);
     }
 
@@ -124,8 +135,8 @@ class LoadBalancerApplicationTests {
     @Test
     void processMediaEventHangup() {
         mongoTemplate.save(new MediaLayer(new MediaLayerDTO("1")));
-        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), 1);
-        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), 1);
+        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), "1");
+        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), "1");
         assertEquals(HttpStatus.OK.toString(),
                 mockService.processEventFromMediaLayer(new EventFromMediaLayer("1", "CHANNEL_HANGUP")));
     }
@@ -133,8 +144,8 @@ class LoadBalancerApplicationTests {
     @Test
     void processMediaEventMute() {
         mongoTemplate.save(new MediaLayer(new MediaLayerDTO("1")));
-        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), 1);
-        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), 1);
+        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), "1");
+        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), "1");
         assertEquals(HttpStatus.OK.toString(),
                 mockService.processEventFromMediaLayer(new EventFromMediaLayer("1", "CHANNEL_MUTE")));
     }
@@ -142,8 +153,8 @@ class LoadBalancerApplicationTests {
     @Test
     void processMediaEventMuteWrongID() {
         mongoTemplate.save(new MediaLayer(new MediaLayerDTO("1")));
-        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), 1);
-        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), 1);
+        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), "1");
+        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), "1");
         assertEquals(HttpStatus.OK.toString(),
                 mockService.processEventFromMediaLayer(new EventFromMediaLayer("1", "CHANNEL_MUTE")));
     }
@@ -151,8 +162,8 @@ class LoadBalancerApplicationTests {
     @Test
     void processMediaEventHangupNoCallExists() {
         mongoTemplate.save(new MediaLayer(new MediaLayerDTO("1")));
-        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), 1);
-        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), 1);
+        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), "1");
+        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), "1");
         assertEquals(HttpStatus.BAD_REQUEST.toString(),
                 mockService.processEventFromMediaLayer(new EventFromMediaLayer("4", "CHANNEL_HANGUP")));
     }
@@ -160,9 +171,8 @@ class LoadBalancerApplicationTests {
     @Test
     void processMediaEventHangupNoConversationExists() {
         mongoTemplate.save(new MediaLayer(new MediaLayerDTO("1")));
-        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), 1);
-        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), 1);
-        mongoTemplate.remove(new Query(), ConversationDetails.class);
+        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), "1");
+        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), "1");
         assertEquals(HttpStatus.BAD_REQUEST.toString(),
                 mockService.processEventFromMediaLayer(new EventFromMediaLayer("1", "CHANNEL_HANGUP")));
     }
@@ -170,17 +180,13 @@ class LoadBalancerApplicationTests {
     @Test
     void processMediaEventHangupNoMediaLayerExists() {
         mongoTemplate.save(new MediaLayer(new MediaLayerDTO("1")));
-        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), 1);
-        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), 1);
+        mockService.processEventControlLayer(new CallFromControlLayer("1", "abc"), "1");
+        mockService.processEventControlLayer(new CallFromControlLayer("2", "abc"), "1");
         mongoTemplate.remove(new Query(), MediaLayer.class);
         assertEquals(HttpStatus.BAD_REQUEST.toString(),
                 mockService.processEventFromMediaLayer(new EventFromMediaLayer("1", "CHANNEL_HANGUP")));
     }
 
-    @Test
-    @Disabled
-    void processEventControlLayer() {
 
-    }
 }
 

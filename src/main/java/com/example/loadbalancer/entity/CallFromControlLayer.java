@@ -14,6 +14,19 @@ public class CallFromControlLayer {
     public CallFromControlLayer() {
     }
 
+    public CallFromControlLayer(String legId, String conversationId) {
+        this.legId = legId;
+        this.conversationId = conversationId;
+    }
+
+    @Override
+    public String toString() {
+        return "CallFromControlLayer{" +
+                "legId='" + legId + '\'' +
+                ", conversationId='" + conversationId + '\'' +
+                '}';
+    }
+
     public String getLegId() {
         return legId;
     }
@@ -27,11 +40,6 @@ public class CallFromControlLayer {
     }
 
     public void setConversationId(String conversationId) {
-        this.conversationId = conversationId;
-    }
-
-    public CallFromControlLayer(String legId, String conversationId) {
-        this.legId = legId;
         this.conversationId = conversationId;
     }
 }

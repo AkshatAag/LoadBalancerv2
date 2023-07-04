@@ -39,6 +39,9 @@ public class EventFromMediaLayer {
         this.relativeTime = eventDTO.getRelativeTime();
     }
 
+    public EventFromMediaLayer() {
+    }
+
     public String getEventName() {
         return eventName;
     }
@@ -93,9 +96,6 @@ public class EventFromMediaLayer {
 
     public void setRelativeTime(long relativeTime) {
         this.relativeTime = relativeTime;
-    }
-
-    public EventFromMediaLayer() {
     }
 
 

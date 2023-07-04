@@ -27,8 +27,9 @@ public class RestController {
     public RestController(Service service) {
         this.service = service;
     }
+
     @GetMapping("/hi")
-    public String hello(){
+    public String hello() {
         return "hi";
     }
 
@@ -39,7 +40,7 @@ public class RestController {
                                                @Min(value = 1, message = "Select an algorithm between 1-2")
                                                @Max(value = 2, message = "Select an algorithm between 1-2") String alg) {
         //return the destination media layer server's number
-        if(alg==null) alg = "1";
+        if (alg == null) alg = "1";
         CallFromControlLayer callFromControlLayer = new CallFromControlLayer(callFromControlLayerDTO);
         return service.processEventControlLayer(callFromControlLayer, alg);
     }
