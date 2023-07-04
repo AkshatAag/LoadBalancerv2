@@ -3,7 +3,6 @@ package com.example.loadbalancer.service;
 import com.example.loadbalancer.entity.Call;
 import com.example.loadbalancer.entity.EventFromMediaLayer;
 import com.example.loadbalancer.entity.MediaLayer;
-import com.example.loadbalancer.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +15,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static com.example.loadbalancer.utils.Utils.CHANNEL_HANGUP;
-import static com.example.loadbalancer.utils.Utils.FIXED_DELAY;
+import static com.example.loadbalancer.utils.Utils.*;
 
 @Component
 public class ScheduledClass {
@@ -52,9 +50,9 @@ public class ScheduledClass {
         logger.info("Media Layers refreshed");
     }
 
-    @Scheduled(fixedDelay = Utils.GENERATE_AUTOHANGUP, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = GENERATE_AUTOHANGUP, timeUnit = TimeUnit.MINUTES)
     public void hangupCalls() {
-        long cutoff = System.currentTimeMillis() - 2 * 60 * 60 * 1000;
+        long cutoff = System.currentTimeMillis() - TWO_HOURS_IN_MILLIS;
 
         Query query = new Query(Criteria.where("fieldName").gt(cutoff));
         List<Call> callList = mongoTemplate.find(query, Call.class);

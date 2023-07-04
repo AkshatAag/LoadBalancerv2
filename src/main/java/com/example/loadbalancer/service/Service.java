@@ -44,7 +44,7 @@ public class Service {
             return call.getMediaLayerNumber();
         }
         Query query = new Query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
-        Call callWithSameConversationId = mongoTemplate.findOne(query, Call.class); //find a call with conversation ID
+        Call callWithSameConversationId = mongoTemplate.findOne(query, Call.class); //find a call with same conversation ID
 
         if ((destinationMediaLayer = getMediaLayer(alg, callWithSameConversationId)) == null) {
             return HttpStatus.INTERNAL_SERVER_ERROR.toString();
@@ -99,7 +99,6 @@ public class Service {
         }
     }
 
-
     public String processEventFromMediaLayer(EventFromMediaLayer event) {
         //PROCESSES THE EVENT FROM THE MEDIA LAYER
         if (event.getEventName().equals(CHANNEL_HANGUP)) {
@@ -107,7 +106,6 @@ public class Service {
         }
         logger.info("Media Layer event was processed");
         return HttpStatus.OK.toString();
-
     }
 
     public void handleEventHangup(EventFromMediaLayer event) {
@@ -177,5 +175,4 @@ public class Service {
         logger.info("Faulty status was changed");
         return HttpStatus.OK.toString();
     }
-
 }
