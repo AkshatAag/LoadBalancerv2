@@ -1,14 +1,12 @@
 package com.example.loadbalancer.entity;
 
 import com.example.loadbalancer.dto.EventFromMediaLayerDTO;
-import org.springframework.data.annotation.Id;
 
 import java.time.LocalDateTime;
 
 
 public class EventFromMediaLayer {
     private String eventName;
-    @Id
     private String coreUUID;
     private String freeSwitchHostname;
     private String freeSwitchSwitchname;
@@ -26,7 +24,7 @@ public class EventFromMediaLayer {
         this.relativeTime = relativeTime;
     }
 
-    public EventFromMediaLayer(String coreUUID,String eventName) {
+    public EventFromMediaLayer(String coreUUID, String eventName) {
         this.eventName = eventName;
         this.coreUUID = coreUUID;
     }

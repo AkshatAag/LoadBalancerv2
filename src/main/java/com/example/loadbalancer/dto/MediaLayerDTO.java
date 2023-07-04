@@ -2,9 +2,11 @@ package com.example.loadbalancer.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import javax.validation.constraints.NotBlank;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MediaLayerDTO {
-
+    @NotBlank(message = "Layer Number can not be blank")
     private String layerNumber;//a number which tells which layer number it is
     private String status = "green";  // red<orange<yellow<green
     private long duration = 0; // total sum of durations of all the simultaneous calls going on in the media layer

@@ -49,18 +49,18 @@ public class Service {
             conversationDetails.incrementLegCount();
 
             new Thread(() -> mongoTemplate.save(conversationDetails)).start();
-            logger.info("Call was added to ongoing conversation");
+            logger.info("Call adding to ongoing conversation");
         } else {
             destinationMediaLayer = getLeastLoaded(alg);
             if (destinationMediaLayer == null) {
                 logger.error("Conversation is going on but unable to find corresponding media layer");
-                return "-1";
+                return HttpStatus.INTERNAL_SERVER_ERROR.toString();
             }
             mediaLayerNumber = assignLayerToNewConversation(conversationId, destinationMediaLayer);
         }
         long currentTime = System.currentTimeMillis();
-        Thread th1 = new Thread(()->mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime)));
-        Thread th2 = new Thread(()->updateMediaLayerNewCall(destinationMediaLayer, currentTime,mongoTemplate));
+        Thread th1 = new Thread(() -> mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime)));
+        Thread th2 = new Thread(() -> updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate));
         return invokeThreadsPerformDatabaseOperations(destinationMediaLayer, th1, th2);
     }
 
@@ -74,7 +74,7 @@ public class Service {
         } catch (InterruptedException e) {
             logger.error(e.toString());
             Thread.currentThread().interrupt();
-            return "-1";
+            return HttpStatus.INTERNAL_SERVER_ERROR.toString();
         }
     }
 
@@ -91,7 +91,7 @@ public class Service {
     private void updateMediaLayerNewCall(MediaLayer mediaLayer, long currentTime, MongoTemplate mongoTemplate) {
         long duration = mediaLayer.getDuration() + (currentTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
         mediaLayer.incrementNumberOfCalls();
-        mediaLayer.setRatio();
+        mediaLayer.calculateAndSetRatio();
         mediaLayer.setLatestCallTimeStamp(currentTime);
         mediaLayer.setDuration(duration);
         mediaLayer.setLastModified(currentTime);
@@ -144,14 +144,14 @@ public class Service {
 
         if (conversationDetails != null) {
 
-            new Thread(() -> deleteById(legId, Call.class)).start();
+            deleteById(legId, Call.class);
             new Thread(() -> updateDatabaseDecrementLegCount(conversationId, conversationDetails)).start();
 
             return updateMediaLayerDatabaseHangupEvent(conversationDetails, currentCall);
 
         } else {
             //there exists a call, but it has no corresponding conversation going on, so we delete that call.
-            deleteById(currentCall.getCallId(), Call.class);
+            new Thread(() -> deleteById(currentCall.getCallId(), Call.class));
             logger.error("NO ONGOING CONVERSATION FOR THIS CALL ID");
             return false;
         }
@@ -171,7 +171,9 @@ public class Service {
         MediaLayer mediaLayer = mongoTemplate.findById(conversationDetails.getMediaLayerNumber(), MediaLayer.class);
         if (mediaLayer != null) {
             new Thread(() -> {
-                mediaLayer.decreaseDuration(System.currentTimeMillis(), currentCall.getTimeStamp());
+                long currentTime =System.currentTimeMillis();
+                mediaLayer.decreaseDuration(currentTime, currentCall.getTimeStamp());
+                mediaLayer.setLastModified(currentTime);
                 mediaLayer.decrementNumberOfCalls();
                 mongoTemplate.save(mediaLayer);
             }).start();
@@ -194,11 +196,10 @@ public class Service {
         //sets the load category of the media server
         MediaLayer mediaLayer = mongoTemplate.findById(layerNumber, MediaLayer.class);
         if (mediaLayer != null) {
-            if(mediaLayer.setStatus(color)) {
+            if (mediaLayer.setStatusAndMaxLoad(color)) {
                 logger.info("Color status was changed");
                 mongoTemplate.save(mediaLayer);
-            }
-            else {
+            } else {
                 logger.info("status was not changed");
                 return HttpStatus.BAD_REQUEST.toString();
             }

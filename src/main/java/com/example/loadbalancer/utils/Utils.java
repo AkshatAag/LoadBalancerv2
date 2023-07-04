@@ -11,6 +11,7 @@ public class Utils {
     private Utils() {
         throw new IllegalStateException("Utility class");
     }
+
     public static final int RED = 1;
     public static final int ORANGE = 2;
     public static final int YELLOW = 3;

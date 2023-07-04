@@ -3,12 +3,15 @@ package com.example.loadbalancer.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class EventFromMediaLayerDTO {
     @JsonProperty("Event-Name")
+    @NotBlank(message = "Event Name can not be blank")
     private String eventName;
+    @NotBlank(message = "Core UUID can not be blank")
     @JsonProperty("Core-UUID")
     private String coreUUID;
     @JsonProperty("FreeSWITCH-HostName")

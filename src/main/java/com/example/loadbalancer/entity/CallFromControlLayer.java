@@ -1,10 +1,8 @@
 package com.example.loadbalancer.entity;
 
 import com.example.loadbalancer.dto.CallFromControlLayerDTO;
-import org.springframework.data.annotation.Id;
 
 public class CallFromControlLayer {
-    @Id
     private String legId;
     private String conversationId;
 

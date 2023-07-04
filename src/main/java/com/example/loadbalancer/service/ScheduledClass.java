@@ -10,9 +10,11 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.example.loadbalancer.utils.Utils.FIXED_DELAY;
+
 @Component
 public class ScheduledClass {
     private final MongoTemplate mongoTemplate;
+
     @Autowired
     public ScheduledClass(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
@@ -34,6 +36,6 @@ public class ScheduledClass {
         long duration = mediaLayer.getDuration() + (curTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
         mediaLayer.setDuration(duration);
         mediaLayer.setLastModified(curTime);
-        mediaLayer.setRatio();
+        mediaLayer.calculateAndSetRatio();
     }
 }

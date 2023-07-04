@@ -8,8 +8,16 @@ import com.example.loadbalancer.entity.EventFromMediaLayer;
 import com.example.loadbalancer.entity.MediaLayer;
 import com.example.loadbalancer.service.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+
+@Validated
 @org.springframework.web.bind.annotation.RestController
 @RequestMapping("controller")
 public class RestController {
@@ -22,34 +30,37 @@ public class RestController {
 
 
     @PostMapping("/control_layer/{alg}")
-    public String processEventFromControlLayer(@RequestBody CallFromControlLayerDTO callFromControlLayerDTO,@PathVariable int alg) {
+    public String processEventFromControlLayer(@RequestBody @Valid CallFromControlLayerDTO callFromControlLayerDTO,
+                                               @PathVariable
+                                               @Min(value = 1, message = "Select an algorithm between 1-2")
+                                               @Max(value = 2, message = "Select an algorithm between 1-2") int alg) {
         //return the destination media layer server's number
         CallFromControlLayer callFromControlLayer = new CallFromControlLayer(callFromControlLayerDTO);
-        return service.processEventControlLayer(callFromControlLayer,alg);
+        return service.processEventControlLayer(callFromControlLayer, alg);
     }
 
     @PostMapping("/new_event")
-    public String processEventFromMediaLayer(@RequestBody EventFromMediaLayerDTO eventDTO) {
+    public String processEventFromMediaLayer(@RequestBody @Valid EventFromMediaLayerDTO eventDTO) {
         //makes changes to current state of database as per calls received from media layer
         EventFromMediaLayer event = new EventFromMediaLayer(eventDTO);
         return service.processEventFromMediaLayer(event);
     }
 
     @PostMapping("/add_new_layer")
-    public String addNewMediaLayer(@RequestBody MediaLayerDTO mediaLayerDTO) {
+    public String addNewMediaLayer(@RequestBody @Valid MediaLayerDTO mediaLayerDTO) {
         //adds a new layer to the load balancer
         MediaLayer mediaLayer = new MediaLayer(mediaLayerDTO);
         return service.addNewMediaLayer(mediaLayer);
     }
 
     @GetMapping("/change_status/{layerNumber}/{color}")
-    public String changeServerStatus(@PathVariable String layerNumber, @PathVariable String color) {
+    public String changeServerStatus(@PathVariable @NotBlank(message = "Layer number cannot be blank") String layerNumber, @PathVariable @NotBlank(message = "Enter a valid color") String color) {
         //used to change the max load of a server. The max load depends on the color category of the server
         return service.setServerStatus(layerNumber, color);
     }
 
     @GetMapping("/set_faulty_status/{layerNumber}/{faulty}")
-    public String changeServerStatus(@PathVariable String layerNumber, @PathVariable boolean faulty) {
+    public String changeServerStatus(@PathVariable @NotBlank(message = "Layer number cannot be blank") String layerNumber, @PathVariable @NotNull boolean faulty) {
         //used to change the current condition of server to faulty. Calls are not routed to faulty server.
         return service.setFaultyStatus(layerNumber, faulty);
     }

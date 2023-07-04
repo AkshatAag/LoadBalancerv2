@@ -18,7 +18,7 @@ public class MediaLayer {
     private int ratio;
     private long latestCallTimeStamp;
 
-    public void setRatio(int ratio) {
+    public void calculateAndSetRatio(int ratio) {
         this.ratio = ratio;
     }
 
@@ -34,8 +34,12 @@ public class MediaLayer {
         return ratio;
     }
 
-    public void setRatio() {
-        this.ratio = (int)(numberOfCalls/maxLoad *10000);
+    public void setRatio(int ratio) {
+        this.ratio = ratio;
+    }
+
+    public void calculateAndSetRatio() {
+        this.ratio = (int) (numberOfCalls / maxLoad * 10000);
     }
 
     public MediaLayer() {
@@ -62,7 +66,7 @@ public class MediaLayer {
         this.maxLoad = mediaLayerDTO.getMaxLoad();
         this.faulty = mediaLayerDTO.isFaulty();
         this.ratio = mediaLayerDTO.getRatio();
-        this.latestCallTimeStamp= mediaLayerDTO.getLatestCallTimeStamp();
+        this.latestCallTimeStamp = mediaLayerDTO.getLatestCallTimeStamp();
     }
 
     public boolean isFaulty() {
@@ -85,7 +89,11 @@ public class MediaLayer {
         return status;
     }
 
-    public boolean setStatus(String status) {
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean setStatusAndMaxLoad(String status) {
         String prevStatus = this.status;
         float multiplier = calculateMultiplier(prevStatus, status);
         if (multiplier == 0) {
@@ -98,7 +106,7 @@ public class MediaLayer {
 
     private float calculateMultiplier(String prevStatus, String newStatus) {
         int diff = Utils.getNumberFromString(newStatus) - Utils.getNumberFromString(prevStatus);
-        if(Utils.getNumberFromString(newStatus)==0) return 0F;
+        if (Utils.getNumberFromString(newStatus) == 0) return 0F;
         float res;
         switch (diff) {
             case -3:
