@@ -135,7 +135,6 @@ public class Service {
         Call currentCall = mongoTemplate.findById(event.getCoreUUID(), Call.class);
         if (currentCall == null) {
             //there is no ongoing call with that call id
-            logger.error("FALSE POSITIVE HANGUP EVENT");
             return false;
         }
         String conversationId = currentCall.getConversationId();
