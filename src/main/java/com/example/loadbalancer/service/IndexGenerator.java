@@ -15,6 +15,7 @@ import javax.annotation.PostConstruct;
 public class IndexGenerator {
     private final MongoTemplate mongoTemplate;
     private final Environment environment;
+
     @Autowired
     public IndexGenerator(MongoTemplate mongoTemplate, Environment environment) {
         this.mongoTemplate = mongoTemplate;
