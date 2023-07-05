@@ -2,6 +2,7 @@ package com.example.loadbalancer.entity;
 
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "Calls")
@@ -9,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Call {
     @Id
     private String callId;
+    @Indexed
     private String conversationId;
     private String mediaLayerNumber;
     private long timeStamp;
