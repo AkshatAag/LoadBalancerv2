@@ -18,30 +18,6 @@ public class MediaLayer {
     private int ratio;
     private long latestCallTimeStamp;
 
-    public void calculateAndSetRatio(int ratio) {
-        this.ratio = ratio;
-    }
-
-    public long getLatestCallTimeStamp() {
-        return latestCallTimeStamp;
-    }
-
-    public void setLatestCallTimeStamp(long latestCallTimeStamp) {
-        this.latestCallTimeStamp = latestCallTimeStamp;
-    }
-
-    public float getRatio() {
-        return ratio;
-    }
-
-    public void setRatio(int ratio) {
-        this.ratio = ratio;
-    }
-
-    public void calculateAndSetRatio() {
-        this.ratio = (int) (numberOfCalls / maxLoad * 10000);
-    }
-
     public MediaLayer() {
     }
 
@@ -67,6 +43,30 @@ public class MediaLayer {
         this.faulty = mediaLayerDTO.isFaulty();
         this.ratio = mediaLayerDTO.getRatio();
         this.latestCallTimeStamp = mediaLayerDTO.getLatestCallTimeStamp();
+    }
+
+    public void calculateAndSetRatio(int ratio) {
+        this.ratio = ratio;
+    }
+
+    public long getLatestCallTimeStamp() {
+        return latestCallTimeStamp;
+    }
+
+    public void setLatestCallTimeStamp(long latestCallTimeStamp) {
+        this.latestCallTimeStamp = latestCallTimeStamp;
+    }
+
+    public float getRatio() {
+        return ratio;
+    }
+
+    public void setRatio(int ratio) {
+        this.ratio = ratio;
+    }
+
+    public void calculateAndSetRatio() {
+        this.ratio = (int) (numberOfCalls / maxLoad * 10000);
     }
 
     public boolean isFaulty() {
@@ -184,5 +184,14 @@ public class MediaLayer {
         lastModified = curTime;
     }
 
-
+    @Override
+    public String toString() {
+        return "MediaLayer{" +
+                "faulty=" + faulty +
+                ", layerNumber='" + layerNumber + '\'' +
+                ", status='" + status + '\'' +
+                ", numberOfCalls=" + numberOfCalls +
+                ", maxLoad=" + maxLoad +
+                '}';
+    }
 }

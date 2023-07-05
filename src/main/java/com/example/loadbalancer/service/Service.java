@@ -1,6 +1,9 @@
 package com.example.loadbalancer.service;
 
-import com.example.loadbalancer.entity.*;
+import com.example.loadbalancer.entity.Call;
+import com.example.loadbalancer.entity.CallFromControlLayer;
+import com.example.loadbalancer.entity.EventFromMediaLayer;
+import com.example.loadbalancer.entity.MediaLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +17,8 @@ import static com.example.loadbalancer.utils.Utils.*;
 
 @org.springframework.stereotype.Service
 public class Service {
-    Logger logger = LoggerFactory.getLogger(Service.class);
     private final MongoTemplate mongoTemplate;
+    Logger logger = LoggerFactory.getLogger(Service.class);
 
     @Autowired
     public Service(MongoTemplate mongoTemplate) {
@@ -31,61 +34,44 @@ public class Service {
 
         String legId = callFromControlLayer.getLegId();
         String conversationId = callFromControlLayer.getConversationId();
-        Call call = mongoTemplate.findById(legId, Call.class);
-        if (call != null) return call.getMediaLayerNumber();
-        ConversationDetails conversationDetails = mongoTemplate.findById(conversationId, ConversationDetails.class);
 
         MediaLayer destinationMediaLayer;
         String mediaLayerNumber;
 
-        if (conversationDetails != null) {
-            //if this conversation already has an ongoing media layer assigned to it
-            destinationMediaLayer = mongoTemplate.findById(conversationDetails.getMediaLayerNumber(), MediaLayer.class);
-            if (destinationMediaLayer == null) {
-                logger.error("Conversation is going on but unable to find corresponding media layer");
-                return HttpStatus.INTERNAL_SERVER_ERROR.toString();
-            }
-            mediaLayerNumber = conversationDetails.getMediaLayerNumber();
-            conversationDetails.incrementLegCount();
+        Call call = mongoTemplate.findById(legId, Call.class);
+        if (call != null) {
+            //Call already exists
+            return call.getMediaLayerNumber();
+        }
+        Query query = new Query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
+        Call callWithSameConversationId = mongoTemplate.findOne(query, Call.class); //find a call with same conversation ID
 
-            new Thread(() -> mongoTemplate.save(conversationDetails)).start();
-            logger.info("Call adding to ongoing conversation");
+        if ((destinationMediaLayer = getMediaLayer(alg, callWithSameConversationId)) == null) {
+            return HttpStatus.INTERNAL_SERVER_ERROR.toString();
+        }
+
+        mediaLayerNumber = destinationMediaLayer.getLayerNumber();
+
+        long currentTime = System.currentTimeMillis();
+        mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
+        updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate);
+        return destinationMediaLayer.getLayerNumber();
+    }
+
+    private MediaLayer getMediaLayer(String alg, Call callWithSameConversationId) {
+        MediaLayer destinationMediaLayer;
+        if (callWithSameConversationId != null) { //ongoing call with this conversation ID.
+            destinationMediaLayer = mongoTemplate.findById(callWithSameConversationId.getMediaLayerNumber(), MediaLayer.class);
+            if (destinationMediaLayer == null) {
+                logger.info("Ongoing call with conversation ID, but no media layer");
+            }
         } else {
             destinationMediaLayer = getLeastLoaded(alg);
             if (destinationMediaLayer == null) {
                 logger.error("Conversation is going on but unable to find corresponding media layer");
-                return HttpStatus.INTERNAL_SERVER_ERROR.toString();
             }
-            mediaLayerNumber = assignLayerToNewConversation(conversationId, destinationMediaLayer);
         }
-        long currentTime = System.currentTimeMillis();
-        Thread th1 = new Thread(() -> mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime)));
-        Thread th2 = new Thread(() -> updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate));
-        return invokeThreadsPerformDatabaseOperations(destinationMediaLayer, th1, th2);
-    }
-
-    private String invokeThreadsPerformDatabaseOperations(MediaLayer destinationMediaLayer, Thread th1, Thread th2) {
-        th1.start();
-        th2.start();
-        try {
-            th1.join();
-            th2.join();
-            return destinationMediaLayer.getLayerNumber();
-        } catch (InterruptedException e) {
-            logger.error(e.toString());
-            Thread.currentThread().interrupt();
-            return HttpStatus.INTERNAL_SERVER_ERROR.toString();
-        }
-    }
-
-    private String assignLayerToNewConversation(String conversationId, MediaLayer destinationMediaLayer) {
-        //creates a new conversation and assigns it to a media layer
-        String mediaLayerNumber;
-        mediaLayerNumber = destinationMediaLayer.getLayerNumber();
-
-        mongoTemplate.save(new ConversationDetails(1, mediaLayerNumber, conversationId));
-        logger.info("Call was added to the least loaded server");
-        return mediaLayerNumber;
+        return destinationMediaLayer;
     }
 
     private void updateMediaLayerNewCall(MediaLayer mediaLayer, long currentTime, MongoTemplate mongoTemplate) {
@@ -113,73 +99,40 @@ public class Service {
         }
     }
 
-
     public String processEventFromMediaLayer(EventFromMediaLayer event) {
         //PROCESSES THE EVENT FROM THE MEDIA LAYER
-        boolean flag = true;
         if (event.getEventName().equals(CHANNEL_HANGUP)) {
-            flag = handleEventHangup(event);
+            handleEventHangup(event);
         }
-        if (flag) {
-            logger.info("Media Layer event was processed");
-            return HttpStatus.OK.toString();
-        } else {
-            logger.error("Unable to process media layer event");
-            return HttpStatus.BAD_REQUEST.toString();
-        }
+        logger.info("Media Layer event was processed");
+        return HttpStatus.OK.toString();
     }
 
-    public boolean handleEventHangup(EventFromMediaLayer event) {
+    public void handleEventHangup(EventFromMediaLayer event) {
         //handles the hangup events
 
         Call currentCall = mongoTemplate.findById(event.getCoreUUID(), Call.class);
         if (currentCall == null) {
             //there is no ongoing call with that call id
-            return false;
+            logger.info("no call with this call ID");
+            return;
         }
-        String conversationId = currentCall.getConversationId();
         String legId = currentCall.getCallId();
-        ConversationDetails conversationDetails = mongoTemplate.findById(conversationId, ConversationDetails.class);
-
-        if (conversationDetails != null) {
-
-            deleteById(legId, Call.class);
-            new Thread(() -> updateDatabaseDecrementLegCount(conversationId, conversationDetails)).start();
-
-            return updateMediaLayerDatabaseHangupEvent(conversationDetails, currentCall);
-
-        } else {
-            //there exists a call, but it has no corresponding conversation going on, so we delete that call.
-            new Thread(() -> deleteById(currentCall.getCallId(), Call.class));
-            logger.error("NO ONGOING CONVERSATION FOR THIS CALL ID");
-            return false;
-        }
+        deleteById(legId, Call.class);
+        updateMediaLayerDatabaseHangupEvent(currentCall);
     }
 
-    private void updateDatabaseDecrementLegCount(String conversationId, ConversationDetails conversationDetails) {
-        conversationDetails.decrementLegCount();
-        if (conversationDetails.getLegCount() == 0) {
-            deleteById(conversationId, ConversationDetails.class);
-        } else {
-            mongoTemplate.save(conversationDetails);
-        }
-    }
-
-    private Boolean updateMediaLayerDatabaseHangupEvent(ConversationDetails conversationDetails, Call currentCall) {
+    private void updateMediaLayerDatabaseHangupEvent(Call currentCall) {
         //makes necessary updates to the database when there is a hangup.
-        MediaLayer mediaLayer = mongoTemplate.findById(conversationDetails.getMediaLayerNumber(), MediaLayer.class);
+        MediaLayer mediaLayer = mongoTemplate.findById(currentCall.getMediaLayerNumber(), MediaLayer.class);
         if (mediaLayer != null) {
-            new Thread(() -> {
-                long currentTime =System.currentTimeMillis();
-                mediaLayer.decreaseDuration(currentTime, currentCall.getTimeStamp());
-                mediaLayer.setLastModified(currentTime);
-                mediaLayer.decrementNumberOfCalls();
-                mongoTemplate.save(mediaLayer);
-            }).start();
-            return true;
+            long currentTime = System.currentTimeMillis();
+            mediaLayer.decreaseDuration(currentTime, currentCall.getTimeStamp());
+            mediaLayer.setLastModified(currentTime);
+            mediaLayer.decrementNumberOfCalls();
+            mongoTemplate.save(mediaLayer);
         } else {
             logger.error("Media server for this conversation does not exist");
-            return false;
         }
     }
 
@@ -222,5 +175,4 @@ public class Service {
         logger.info("Faulty status was changed");
         return HttpStatus.OK.toString();
     }
-
 }
