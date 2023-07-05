@@ -1,7 +1,9 @@
 package com.example.loadbalancer.utils;
 
-public class Utils {
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
 
+public class Utils {
     public static final String CHANNEL_HANGUP = "CHANNEL_HANGUP";
     public static final String FIELD_FAULTY = "faulty";
     public static final String FIELD_RATIO = "ratio";

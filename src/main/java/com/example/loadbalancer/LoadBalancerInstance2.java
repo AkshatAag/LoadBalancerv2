@@ -4,8 +4,6 @@ package com.example.loadbalancer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 
 @SpringBootApplication

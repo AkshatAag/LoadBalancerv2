@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
@@ -40,7 +41,6 @@ public class Service {
         MediaLayer destinationMediaLayer;
         String mediaLayerNumber;
         Call callWithSameConversationId = null;
-
         Query query = new Query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
         List<Call> callsWithSameConversationId = mongoTemplate.find(query, Call.class); //find a call with same conversation ID
         for (Call call : callsWithSameConversationId) {
