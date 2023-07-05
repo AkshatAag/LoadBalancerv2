@@ -9,13 +9,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 
 @SpringBootApplication
-@EnableScheduling
-@EnableAsync
-public class LoadBalancerApplication {
+public class LoadBalancerInstance2 {
 
     public static void main(String[] args) {
-        new SpringApplicationBuilder(LoadBalancerApplication.class)
-                .properties("server.port=8080")
+        new SpringApplicationBuilder(LoadBalancerInstance2.class)
+                .properties("server.port=8081")
                 .run(args);
     }
 

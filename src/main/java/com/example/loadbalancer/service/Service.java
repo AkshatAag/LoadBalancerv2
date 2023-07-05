@@ -13,6 +13,8 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 
+import java.util.List;
+
 import static com.example.loadbalancer.utils.Utils.*;
 
 @org.springframework.stereotype.Service
@@ -37,15 +39,18 @@ public class Service {
 
         MediaLayer destinationMediaLayer;
         String mediaLayerNumber;
+        Call callWithSameConversationId = null;
 
-        Call call = mongoTemplate.findById(legId, Call.class);
-        if (call != null) {
-            //Call already exists
-            return call.getMediaLayerNumber();
-        }
         Query query = new Query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
-        Call callWithSameConversationId = mongoTemplate.findOne(query, Call.class); //find a call with same conversation ID
-
+        List<Call> callsWithSameConversationId = mongoTemplate.find(query, Call.class); //find a call with same conversation ID
+        for (Call call : callsWithSameConversationId) {
+            if (call.getCallId().equals(legId)) {
+                return call.getMediaLayerNumber();
+            }
+        }
+        if (!callsWithSameConversationId.isEmpty()) {
+            callWithSameConversationId = callsWithSameConversationId.get(0);
+        }
         if ((destinationMediaLayer = getMediaLayer(alg, callWithSameConversationId)) == null) {
             return HttpStatus.INTERNAL_SERVER_ERROR.toString();
         }
