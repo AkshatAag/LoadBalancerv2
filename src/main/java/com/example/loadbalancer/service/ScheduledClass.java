@@ -6,7 +6,7 @@ import com.example.loadbalancer.entity.MediaLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -19,18 +19,16 @@ import java.util.concurrent.TimeUnit;
 import static com.example.loadbalancer.utils.Utils.*;
 
 @Component
+@ConditionalOnProperty(name = "instantiate-once", havingValue = "true")
 public class ScheduledClass {
     private final MongoTemplate mongoTemplate;
     private final Service service;
-
-    private final Environment environment;
     Logger logger = LoggerFactory.getLogger(ScheduledClass.class);
 
     @Autowired
-    public ScheduledClass(MongoTemplate mongoTemplate, Service service, Environment environment) {
+    public ScheduledClass(MongoTemplate mongoTemplate, Service service) {
         this.mongoTemplate = mongoTemplate;
         this.service = service;
-        this.environment = environment;
     }
 
     private static void refreshMediaLayerAttributes(MediaLayer mediaLayer) {
@@ -44,9 +42,6 @@ public class ScheduledClass {
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = 0, timeUnit = TimeUnit.SECONDS)
     public void refreshDatabaseMongo() {
-        if (!"8080".equals(environment.getProperty("server.port"))) {
-            return;
-        }
         //updates the duration and lastModified fields of the database every few seconds
         List<MediaLayer> mediaLayerList = mongoTemplate.findAll(MediaLayer.class);
         for (MediaLayer mediaLayer : mediaLayerList) {
@@ -58,9 +53,6 @@ public class ScheduledClass {
 
     @Scheduled(fixedDelay = GENERATE_AUTOHANGUP, timeUnit = TimeUnit.MINUTES)
     public void hangupCalls() {
-        if (!"8080".equals(environment.getProperty("server.port"))) {
-            return;
-        }
         long cutoff = System.currentTimeMillis() - TWO_HOURS_IN_MILLIS;
 
         Query query = new Query(Criteria.where("fieldName").gt(cutoff));
