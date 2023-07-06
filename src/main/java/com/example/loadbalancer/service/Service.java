@@ -14,12 +14,15 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.example.loadbalancer.utils.Utils.*;
 
 @org.springframework.stereotype.Service
 public class Service {
     private final MongoTemplate mongoTemplate;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(100);
     Logger logger = LoggerFactory.getLogger(Service.class);
 
     @Autowired
@@ -57,8 +60,10 @@ public class Service {
         mediaLayerNumber = destinationMediaLayer.getLayerNumber();
 
         long currentTime = System.currentTimeMillis();
-        mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
-        updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate);
+        executorService.submit(()->mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime)));
+//        mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
+//        updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate);
+        executorService.submit(()->updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate));
         return destinationMediaLayer.getLayerNumber();
     }
 
@@ -122,7 +127,8 @@ public class Service {
             return;
         }
         String legId = currentCall.getCallId();
-        deleteById(legId, Call.class);
+        executorService.submit(()->deleteById(legId, Call.class));
+//        deleteById(legId, Call.class);
         updateMediaLayerDatabaseHangupEvent(currentCall);
     }
 

@@ -4,7 +4,6 @@ import com.example.loadbalancer.dto.MediaLayerDTO;
 import com.example.loadbalancer.utils.Utils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "MediaLayers")
@@ -196,5 +195,37 @@ public class MediaLayer {
                 ", numberOfCalls=" + numberOfCalls +
                 ", maxLoad=" + maxLoad +
                 '}';
+    }
+
+    public void calculateAndSetStatus() {
+        switch (status) {
+            case "red": {
+                if (ratio<50000){
+                    setStatusAndMaxLoad("orange");
+                }
+                break;
+            }
+            case "orange": {
+                if(ratio <20000){
+                    setStatusAndMaxLoad("yellow");
+                }
+                break;
+            }
+            case "yellow": {
+                if(ratio < 8000F){
+                    setStatusAndMaxLoad("green");
+                }
+                break;
+            }
+            case "green": {
+                if (ratio > 10000){
+                    setStatusAndMaxLoad("red");
+                }
+                break;
+            }
+            default:{
+                break;
+            }
+        }
     }
 }

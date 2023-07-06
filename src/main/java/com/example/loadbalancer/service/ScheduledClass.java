@@ -37,6 +37,7 @@ public class ScheduledClass {
         long duration = mediaLayer.getDuration() + (curTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
         mediaLayer.setDuration(duration);
         mediaLayer.setLastModified(curTime);
+        mediaLayer.calculateAndSetStatus();
         mediaLayer.calculateAndSetRatio();
     }
 

@@ -22,7 +22,6 @@ import javax.validation.constraints.NotNull;
 @RequestMapping("controller")
 public class RestController {
     private final Service service;
-
     @Autowired
     public RestController(Service service) {
         this.service = service;
