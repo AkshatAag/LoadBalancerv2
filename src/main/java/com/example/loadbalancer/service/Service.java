@@ -4,6 +4,7 @@ import com.example.loadbalancer.entity.Call;
 import com.example.loadbalancer.entity.CallFromControlLayer;
 import com.example.loadbalancer.entity.EventFromMediaLayer;
 import com.example.loadbalancer.entity.MediaLayer;
+import com.mongodb.client.result.DeleteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,18 +12,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static com.example.loadbalancer.utils.Utils.*;
 
 @org.springframework.stereotype.Service
 public class Service {
     private final MongoTemplate mongoTemplate;
-    private final ExecutorService executorService = Executors.newFixedThreadPool(100);
+    //    private final ExecutorService executorService = Executors.newFixedThreadPool(100);
     Logger logger = LoggerFactory.getLogger(Service.class);
 
     @Autowired
@@ -30,8 +30,8 @@ public class Service {
         this.mongoTemplate = mongoTemplate;
     }
 
-    public void deleteById(String id, Class<?> entityClass) {
-        mongoTemplate.remove(Query.query(Criteria.where(FIELD_ID).is(id)), entityClass);
+    public DeleteResult deleteById(String id, Class<?> entityClass) {
+        return mongoTemplate.remove(Query.query(Criteria.where(FIELD_ID).is(id)), entityClass);
     }
 
 
@@ -39,8 +39,6 @@ public class Service {
 
         String legId = callFromControlLayer.getLegId();
         String conversationId = callFromControlLayer.getConversationId();
-
-        MediaLayer destinationMediaLayer;
         String mediaLayerNumber;
         Call callWithSameConversationId = null;
         Query query = new Query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
@@ -53,44 +51,53 @@ public class Service {
         if (!callsWithSameConversationId.isEmpty()) {
             callWithSameConversationId = callsWithSameConversationId.get(0);
         }
-        if ((destinationMediaLayer = getMediaLayer(alg, callWithSameConversationId)) == null) {
+        if ((mediaLayerNumber = getMediaLayer(alg, callWithSameConversationId)) == null) {
             return HttpStatus.INTERNAL_SERVER_ERROR.toString();
         }
 
-        mediaLayerNumber = destinationMediaLayer.getLayerNumber();
+        long currentTime;
 
-        long currentTime = System.currentTimeMillis();
-        executorService.submit(()->mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime)));
-//        mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
-//        updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate);
-        executorService.submit(()->updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate));
-        return destinationMediaLayer.getLayerNumber();
+        while (!updateMediaLayerNewCall(mediaLayerNumber, currentTime=System.currentTimeMillis(), mongoTemplate)) ;
+        logger.info("NEW CALL WAS SAVED TO MONGO database MEDIA LAYERSS: TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
+        mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
+        logger.info("NEW CALL WAS SAVED TO MONGO database CAlls : TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
+        return mediaLayerNumber;
     }
 
-    private MediaLayer getMediaLayer(String alg, Call callWithSameConversationId) {
-        MediaLayer destinationMediaLayer;
+    private String getMediaLayer(String alg, Call callWithSameConversationId) {
+        MediaLayer destinationMediaLayer = null;
         if (callWithSameConversationId != null) { //ongoing call with this conversation ID.
-            destinationMediaLayer = mongoTemplate.findById(callWithSameConversationId.getMediaLayerNumber(), MediaLayer.class);
-            if (destinationMediaLayer == null) {
-                logger.info("Ongoing call with conversation ID, but no media layer");
-            }
+            return callWithSameConversationId.getMediaLayerNumber();
+//            if (destinationMediaLayer == null) {
+//                logger.info("Ongoing call with conversation ID, but no media layer... Conversation ID : {}", callWithSameConversationId.getConversationId());
+//            }
         } else {
             destinationMediaLayer = getLeastLoaded(alg);
             if (destinationMediaLayer == null) {
-                logger.error("Conversation is going on but unable to find corresponding media layer");
+                logger.error("Conversation is going on but unable to find corresponding media layer... conversationID:{}", callWithSameConversationId.getConversationId());
             }
         }
-        return destinationMediaLayer;
+        return destinationMediaLayer.getLayerNumber();
     }
 
-    private void updateMediaLayerNewCall(MediaLayer mediaLayer, long currentTime, MongoTemplate mongoTemplate) {
-        long duration = mediaLayer.getDuration() + (currentTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
+    private boolean updateMediaLayerNewCall(String mediaLayerNumber, long currentTime, MongoTemplate mongoTemplate) {
+        MediaLayer mediaLayer = mongoTemplate.findById(mediaLayerNumber, MediaLayer.class);
+        assert mediaLayer != null;
+        long lastModifiedTimeStamp = mediaLayer.getLastModified();
+        long duration = mediaLayer.getDuration() + (currentTime - lastModifiedTimeStamp) * mediaLayer.getNumberOfCalls();
         mediaLayer.incrementNumberOfCalls();
         mediaLayer.calculateAndSetRatio();
         mediaLayer.setLatestCallTimeStamp(currentTime);
         mediaLayer.setDuration(duration);
         mediaLayer.setLastModified(currentTime);
-        mongoTemplate.save(mediaLayer);
+        Query query = new Query(Criteria.where("lastModified").is(lastModifiedTimeStamp).and("_id").is(mediaLayer.getLayerNumber()));
+        Update update = new Update();
+        update.set("numberOfCalls", mediaLayer.getNumberOfCalls());
+        update.set("ratio", mediaLayer.getRatio());
+        update.set("latestCallTimeStamp", mediaLayer.getLatestCallTimeStamp());
+        update.set("duration", mediaLayer.getDuration());
+        update.set("lastModified", mediaLayer.getLastModified());
+        return null != mongoTemplate.findAndModify(query, update, MediaLayer.class);
     }
 
     private MediaLayer getLeastLoaded(String alg) {
@@ -123,26 +130,35 @@ public class Service {
         Call currentCall = mongoTemplate.findById(event.getCoreUUID(), Call.class);
         if (currentCall == null) {
             //there is no ongoing call with that call id
-            logger.info("no call with this call ID");
+            logger.info("no call with this call ID :{}", currentCall.getCallId());
             return;
         }
         String legId = currentCall.getCallId();
-        executorService.submit(()->deleteById(legId, Call.class));
-//        deleteById(legId, Call.class);
-        updateMediaLayerDatabaseHangupEvent(currentCall);
+        if (deleteById(legId, Call.class).getDeletedCount() > 0) {
+            logger.info("call deleted from call repo: call id {}",currentCall.getCallId());
+            while(!updateMediaLayerDatabaseHangupEvent(currentCall));
+            logger.info("call deleted from medialayer repo : call id {}",currentCall.getCallId());
+        }
     }
 
-    private void updateMediaLayerDatabaseHangupEvent(Call currentCall) {
+    private boolean updateMediaLayerDatabaseHangupEvent(Call currentCall) {
         //makes necessary updates to the database when there is a hangup.
         MediaLayer mediaLayer = mongoTemplate.findById(currentCall.getMediaLayerNumber(), MediaLayer.class);
         if (mediaLayer != null) {
             long currentTime = System.currentTimeMillis();
+            long lastModifiedTimeStamp = mediaLayer.getLastModified();
             mediaLayer.decreaseDuration(currentTime, currentCall.getTimeStamp());
             mediaLayer.setLastModified(currentTime);
             mediaLayer.decrementNumberOfCalls();
-            mongoTemplate.save(mediaLayer);
+            Query query = new Query(Criteria.where("lastModified").is(lastModifiedTimeStamp).and("_id").is(mediaLayer.getLayerNumber()));
+            Update update = new Update();
+            update.set("numberOfCalls", mediaLayer.getNumberOfCalls());
+            update.set("duration", mediaLayer.getDuration());
+            update.set("lastModified", mediaLayer.getLastModified());
+            return null!=mongoTemplate.findAndModify(query,update, MediaLayer.class);
         } else {
-            logger.error("Media server for this conversation does not exist");
+            logger.error("Media server for this conversation does not exist  media layer number:{}", currentCall.getMediaLayerNumber());
+            return true;
         }
     }
 
