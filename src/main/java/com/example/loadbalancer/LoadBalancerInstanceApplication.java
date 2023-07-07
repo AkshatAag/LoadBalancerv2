@@ -11,10 +11,10 @@ import org.springframework.validation.beanvalidation.MethodValidationPostProcess
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync
-public class LoadBalancerApplication {
+public class LoadBalancerInstanceApplication {
 
     public static void main(String[] args) {
-        new SpringApplicationBuilder(LoadBalancerApplication.class)
+        new SpringApplicationBuilder(LoadBalancerInstanceApplication.class)
                 .properties("instantiate-once=false", "server.port=8080")
                 .run(args);
     }

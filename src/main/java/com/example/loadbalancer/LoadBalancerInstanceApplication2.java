@@ -7,10 +7,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor;
 
 @SpringBootApplication
-public class LoadBalancerInstance2 {
+public class LoadBalancerInstanceApplication2 {
 
     public static void main(String[] args) {
-        new SpringApplicationBuilder(LoadBalancerInstance2.class)
+        new SpringApplicationBuilder(LoadBalancerInstanceApplication2.class)
                 .properties("instantiate-once=false","server.port=8081")
                 .run(args);
     }

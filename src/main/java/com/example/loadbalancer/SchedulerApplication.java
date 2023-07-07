@@ -6,12 +6,14 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import javax.annotation.PreDestroy;
+
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync
-public class Scheduler {
+public class SchedulerApplication {
     public static void main(String[] args) {
-        new SpringApplicationBuilder(Scheduler.class)
+        new SpringApplicationBuilder(SchedulerApplication.class)
                 .properties("instantiate-once=true", "server.port=8082")
                 .run(args);
     }

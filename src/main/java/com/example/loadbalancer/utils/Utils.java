@@ -1,6 +1,8 @@
 package com.example.loadbalancer.utils;
 
 public class Utils {
+
+
     public static final String CHANNEL_HANGUP = "CHANNEL_HANGUP";
     public static final String FIELD_FAULTY = "faulty";
     public static final String FIELD_RATIO = "ratio";
@@ -17,6 +19,9 @@ public class Utils {
     public static final int FIXED_DELAY = 10;
     public static final String FIELD_ID = "_id";
     public static final int TWO_HOURS_IN_MILLIS = 2 * 60 * 60 * 1000;
+    public static final String FIELD_LAST_MODIFIED = "lastModified";
+    public static final String FIELD_NUMBER_OF_CALLS = "numberOfCalls";
+    public static final String ID = "_id";
 
     private Utils() {
         throw new IllegalStateException("Utility class");
