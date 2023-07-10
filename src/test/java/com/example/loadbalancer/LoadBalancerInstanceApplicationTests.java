@@ -28,14 +28,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @AutoConfigureMockMvc
-@SpringBootTest(classes = {LoadBalancerApplicationTests.class})
-class LoadBalancerApplicationTests {
+@SpringBootTest(classes = {LoadBalancerInstanceApplicationTests.class})
+class LoadBalancerInstanceApplicationTests {
 
     private static final String CONNECTION_STRING = "mongodb://%s:%d";
     private static MongodExecutable mongodExecutable;

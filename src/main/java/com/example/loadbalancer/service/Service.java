@@ -1,9 +1,7 @@
 package com.example.loadbalancer.service;
 
-import com.example.loadbalancer.entity.Call;
-import com.example.loadbalancer.entity.CallFromControlLayer;
-import com.example.loadbalancer.entity.EventFromMediaLayer;
-import com.example.loadbalancer.entity.MediaLayer;
+import com.example.loadbalancer.entity.*;
+import com.mongodb.client.result.DeleteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,27 +9,28 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static com.example.loadbalancer.utils.Utils.*;
 
 @org.springframework.stereotype.Service
 public class Service {
+    private static final Logger logger = LoggerFactory.getLogger(Service.class);
     private final MongoTemplate mongoTemplate;
-    private final ExecutorService executorService = Executors.newFixedThreadPool(100);
-    Logger logger = LoggerFactory.getLogger(Service.class);
 
     @Autowired
     public Service(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
     }
 
-    public void deleteById(String id, Class<?> entityClass) {
-        mongoTemplate.remove(Query.query(Criteria.where(FIELD_ID).is(id)), entityClass);
+    public DeleteResult deleteById(String id, Class<?> entityClass) {
+        Query query = Query.query(Criteria.where(FIELD_ID).is(id));
+        DeleteResult result = mongoTemplate.remove(query, entityClass);
+        logger.info("Deleted document with ID: {}", id);
+        return result;
     }
 
 
@@ -39,77 +38,92 @@ public class Service {
 
         String legId = callFromControlLayer.getLegId();
         String conversationId = callFromControlLayer.getConversationId();
-
-        MediaLayer destinationMediaLayer;
         String mediaLayerNumber;
-        Call callWithSameConversationId = null;
-        Query query = new Query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
-        List<Call> callsWithSameConversationId = mongoTemplate.find(query, Call.class); //find a call with same conversation ID
+
+        Query query = Query.query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
+        List<Call> callsWithSameConversationId = mongoTemplate.find(query, Call.class);
+
+
         for (Call call : callsWithSameConversationId) {
             if (call.getCallId().equals(legId)) {
                 return call.getMediaLayerNumber();
             }
         }
-        if (!callsWithSameConversationId.isEmpty()) {
-            callWithSameConversationId = callsWithSameConversationId.get(0);
-        }
-        if ((destinationMediaLayer = getMediaLayer(alg, callWithSameConversationId)) == null) {
+
+        Call callWithSameConversationId = !callsWithSameConversationId.isEmpty() ? callsWithSameConversationId.get(0) : null;
+
+        mediaLayerNumber = getMediaLayer(alg, callWithSameConversationId);
+        if (mediaLayerNumber == null) {
             return HttpStatus.INTERNAL_SERVER_ERROR.toString();
         }
 
-        mediaLayerNumber = destinationMediaLayer.getLayerNumber();
-
         long currentTime = System.currentTimeMillis();
-        executorService.submit(()->mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime)));
-//        mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
-//        updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate);
-        executorService.submit(()->updateMediaLayerNewCall(destinationMediaLayer, currentTime, mongoTemplate));
-        return destinationMediaLayer.getLayerNumber();
-    }
-
-    private MediaLayer getMediaLayer(String alg, Call callWithSameConversationId) {
-        MediaLayer destinationMediaLayer;
-        if (callWithSameConversationId != null) { //ongoing call with this conversation ID.
-            destinationMediaLayer = mongoTemplate.findById(callWithSameConversationId.getMediaLayerNumber(), MediaLayer.class);
-            if (destinationMediaLayer == null) {
-                logger.info("Ongoing call with conversation ID, but no media layer");
-            }
-        } else {
-            destinationMediaLayer = getLeastLoaded(alg);
-            if (destinationMediaLayer == null) {
-                logger.error("Conversation is going on but unable to find corresponding media layer");
-            }
+        while (!updateMediaLayerNewCall(mediaLayerNumber, currentTime, mongoTemplate)) {
+            currentTime = System.currentTimeMillis();
         }
-        return destinationMediaLayer;
+
+        logger.info("NEW CALL WAS SAVED TO MONGO DATABASE MEDIA_LAYERS: TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
+
+        mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
+        logger.info("NEW CALL WAS SAVED TO MONGO DATABASE CAll : TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
+
+        return mediaLayerNumber;
     }
 
-    private void updateMediaLayerNewCall(MediaLayer mediaLayer, long currentTime, MongoTemplate mongoTemplate) {
-        long duration = mediaLayer.getDuration() + (currentTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
+    private String getMediaLayer(String alg, Call callWithSameConversationId) {
+        if (callWithSameConversationId != null) {
+            // Ongoing call with the same conversation ID
+            return callWithSameConversationId.getMediaLayerNumber();
+        } else {
+            //Initiate new conversation for this call
+            MediaLayer destinationMediaLayer = getLeastLoaded(alg);
+            if (destinationMediaLayer == null) {
+                logger.error("Could not find least loaded media server.");
+            }
+            return destinationMediaLayer != null ? destinationMediaLayer.getLayerNumber() : null;
+        }
+    }
+
+    private boolean updateMediaLayerNewCall(String mediaLayerNumber, long currentTime, MongoTemplate mongoTemplate) {
+        MediaLayer mediaLayer = mongoTemplate.findById(mediaLayerNumber, MediaLayer.class);
+        assert mediaLayer != null;
+        long lastModifiedTimeStamp = mediaLayer.getLastModified();
+        long duration = mediaLayer.getDuration() + (currentTime - lastModifiedTimeStamp) * mediaLayer.getNumberOfCalls();
+
         mediaLayer.incrementNumberOfCalls();
         mediaLayer.calculateAndSetRatio();
         mediaLayer.setLatestCallTimeStamp(currentTime);
         mediaLayer.setDuration(duration);
         mediaLayer.setLastModified(currentTime);
-        mongoTemplate.save(mediaLayer);
+
+        Query query = new Query(Criteria.where(FIELD_LAST_MODIFIED).is(lastModifiedTimeStamp).and(FIELD_ID).is(mediaLayer.getLayerNumber()));
+        Update update = new Update()
+                .set(FIELD_NUMBER_OF_CALLS, mediaLayer.getNumberOfCalls())
+                .set(FIELD_RATIO, mediaLayer.getRatio())
+                .set(FIELD_LATEST_CALL_TIME_STAMP, mediaLayer.getLatestCallTimeStamp())
+                .set(FIELD_DURATION, mediaLayer.getDuration())
+                .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified());
+        return 0 != mongoTemplate.updateFirst(query, update, MediaLayer.class).getModifiedCount();
+
     }
 
     private MediaLayer getLeastLoaded(String alg) {
         //RETURNS THE LEAST LOADED MEDIA LAYER SERVER BASED ON THE ALGORITHM.
         switch (Integer.parseInt(alg)) {
             case LEAST_CONNECTIONS:
-                Query queryLeastConnections = new Query(Criteria.where(FIELD_FAULTY).is(false)).with(Sort.by(Sort.Direction.ASC, FIELD_RATIO).and(Sort.by(Sort.Direction.ASC, FIELD_DURATION))).limit(1);
+                Query queryLeastConnections = Query.query(Criteria.where(FIELD_FAULTY).is(false)).with(Sort.by(Sort.Direction.ASC, FIELD_RATIO).and(Sort.by(Sort.Direction.ASC, FIELD_DURATION))).limit(1);
                 return mongoTemplate.findOne(queryLeastConnections, MediaLayer.class);
 
             case ROUND_ROBIN:
-                Query queryRoundRobin = new Query(Criteria.where(FIELD_FAULTY).is(false)).with(Sort.by(Sort.Direction.ASC, FIELD_LATEST_CALL_TIME_STAMP)).limit(1);
+                Query queryRoundRobin = Query.query(Criteria.where(FIELD_FAULTY).is(false)).with(Sort.by(Sort.Direction.ASC, FIELD_LATEST_CALL_TIME_STAMP)).limit(1);
                 return mongoTemplate.findOne(queryRoundRobin, MediaLayer.class);
+
             default:
                 return null;
         }
     }
 
     public String processEventFromMediaLayer(EventFromMediaLayer event) {
-        //PROCESSES THE EVENT FROM THE MEDIA LAYER
         if (event.getEventName().equals(CHANNEL_HANGUP)) {
             handleEventHangup(event);
         }
@@ -118,31 +132,41 @@ public class Service {
     }
 
     public void handleEventHangup(EventFromMediaLayer event) {
-        //handles the hangup events
+        String callId = event.getCoreUUID();
 
-        Call currentCall = mongoTemplate.findById(event.getCoreUUID(), Call.class);
+        Call currentCall = mongoTemplate.findById(callId, Call.class);
         if (currentCall == null) {
-            //there is no ongoing call with that call id
-            logger.info("no call with this call ID");
+            logger.info("No ongoing call with this call ID: {}", event.getCoreUUID());
             return;
         }
-        String legId = currentCall.getCallId();
-        executorService.submit(()->deleteById(legId, Call.class));
-//        deleteById(legId, Call.class);
-        updateMediaLayerDatabaseHangupEvent(currentCall);
+        if (deleteById(callId, Call.class).getDeletedCount() > 0) {
+            logger.info("Call deleted from call repository: Call ID: {}", currentCall.getCallId());
+            while (!updateMediaLayerDatabaseHangupEvent(currentCall)) {
+                // Retry until successful update
+            }
+            logger.info("Call deleted from media layer repository: Call ID: {}", currentCall.getCallId());
+        }
     }
 
-    private void updateMediaLayerDatabaseHangupEvent(Call currentCall) {
-        //makes necessary updates to the database when there is a hangup.
+    private boolean updateMediaLayerDatabaseHangupEvent(Call currentCall) {
         MediaLayer mediaLayer = mongoTemplate.findById(currentCall.getMediaLayerNumber(), MediaLayer.class);
         if (mediaLayer != null) {
             long currentTime = System.currentTimeMillis();
+            long lastModifiedTimeStamp = mediaLayer.getLastModified();
+
             mediaLayer.decreaseDuration(currentTime, currentCall.getTimeStamp());
             mediaLayer.setLastModified(currentTime);
             mediaLayer.decrementNumberOfCalls();
-            mongoTemplate.save(mediaLayer);
+
+            Query query = Query.query(Criteria.where(FIELD_LAST_MODIFIED).is(lastModifiedTimeStamp).and(ID).is(mediaLayer.getLayerNumber()));
+            Update update = new Update()
+                    .set(FIELD_NUMBER_OF_CALLS, mediaLayer.getNumberOfCalls())
+                    .set(FIELD_DURATION, mediaLayer.getDuration())
+                    .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified());
+            return mongoTemplate.updateFirst(query, update, MediaLayer.class).getModifiedCount() != 0;
         } else {
-            logger.error("Media server for this conversation does not exist");
+            logger.error("Media server for this conversation does not exist. Media layer number: {}", currentCall.getMediaLayerNumber());
+            return true;
         }
     }
 
@@ -155,14 +179,13 @@ public class Service {
 
 
     public String setServerStatus(String layerNumber, String color) {
-        //sets the load category of the media server
         MediaLayer mediaLayer = mongoTemplate.findById(layerNumber, MediaLayer.class);
         if (mediaLayer != null) {
             if (mediaLayer.setStatusAndMaxLoad(color)) {
                 logger.info("Color status was changed");
                 mongoTemplate.save(mediaLayer);
             } else {
-                logger.info("status was not changed");
+                logger.info("Status was not changed");
                 return HttpStatus.BAD_REQUEST.toString();
             }
         } else {
@@ -173,7 +196,6 @@ public class Service {
     }
 
     public String setFaultyStatus(String layerNumber, boolean status) {
-        //sets the faulty status of the media layer
         MediaLayer mediaLayer = mongoTemplate.findById(layerNumber, MediaLayer.class);
         if (mediaLayer != null) {
             mediaLayer.setFaulty(status);
