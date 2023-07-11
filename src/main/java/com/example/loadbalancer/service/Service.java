@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpStatus;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.example.loadbalancer.utils.Utils.*;
@@ -20,6 +21,8 @@ import static com.example.loadbalancer.utils.Utils.*;
 public class Service {
     private static final Logger logger = LoggerFactory.getLogger(Service.class);
     private final MongoTemplate mongoTemplate;
+    private List<Long> timeStamps = new ArrayList<>();
+    long localtime;
 
     @Autowired
     public Service(MongoTemplate mongoTemplate) {
@@ -41,8 +44,9 @@ public class Service {
         String mediaLayerNumber;
 
         Query query = Query.query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
+        localtime = System.nanoTime();
         List<Call> callsWithSameConversationId = mongoTemplate.find(query, Call.class);
-
+        timeStamps.add(System.nanoTime()-localtime);
 
         for (Call call : callsWithSameConversationId) {
             if (call.getCallId().equals(legId)) {
@@ -61,10 +65,11 @@ public class Service {
         while (!updateMediaLayerNewCall(mediaLayerNumber, currentTime, mongoTemplate)) {
             currentTime = System.currentTimeMillis();
         }
-
+        timeStamps.add(System.nanoTime()-localtime);
         logger.info("NEW CALL WAS SAVED TO MONGO DATABASE MEDIA_LAYERS: TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
-
+        localtime = System.nanoTime();
         mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
+        timeStamps.add(System.nanoTime()-localtime);
         logger.info("NEW CALL WAS SAVED TO MONGO DATABASE CAll : TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
 
         return mediaLayerNumber;
@@ -85,7 +90,9 @@ public class Service {
     }
 
     private boolean updateMediaLayerNewCall(String mediaLayerNumber, long currentTime, MongoTemplate mongoTemplate) {
+        localtime = System.nanoTime();
         MediaLayer mediaLayer = mongoTemplate.findById(mediaLayerNumber, MediaLayer.class);
+        timeStamps.add(System.nanoTime()-localtime);
         assert mediaLayer != null;
         long lastModifiedTimeStamp = mediaLayer.getLastModified();
         long duration = mediaLayer.getDuration() + (currentTime - lastModifiedTimeStamp) * mediaLayer.getNumberOfCalls();
@@ -103,6 +110,7 @@ public class Service {
                 .set(FIELD_LATEST_CALL_TIME_STAMP, mediaLayer.getLatestCallTimeStamp())
                 .set(FIELD_DURATION, mediaLayer.getDuration())
                 .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified());
+        localtime = System.nanoTime();
         return 0 != mongoTemplate.updateFirst(query, update, MediaLayer.class).getModifiedCount();
 
     }
@@ -206,5 +214,9 @@ public class Service {
         }
         logger.info("Faulty status was changed");
         return HttpStatus.OK.toString();
+    }
+
+    public List<Long> getTimeStamps() {
+        return timeStamps;
     }
 }

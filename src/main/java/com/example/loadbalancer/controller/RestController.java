@@ -30,8 +30,9 @@ public class RestController {
 
     @GetMapping("/hi")
     public String hello() {
-        return "hi";
+        return service.getTimeStamps().toString();
     }
+
 
     @PostMapping("/control_layer/{alg}")
     public String processEventFromControlLayer(@RequestBody @Valid CallFromControlLayerDTO callFromControlLayerDTO,
