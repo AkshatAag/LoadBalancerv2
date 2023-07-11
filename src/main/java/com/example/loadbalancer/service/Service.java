@@ -1,6 +1,9 @@
 package com.example.loadbalancer.service;
 
-import com.example.loadbalancer.entity.*;
+import com.example.loadbalancer.entity.Call;
+import com.example.loadbalancer.entity.CallFromControlLayer;
+import com.example.loadbalancer.entity.EventFromMediaLayer;
+import com.example.loadbalancer.entity.MediaLayer;
 import com.mongodb.client.result.DeleteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

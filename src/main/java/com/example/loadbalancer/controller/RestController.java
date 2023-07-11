@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.PreDestroy;
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -23,6 +22,7 @@ import javax.validation.constraints.NotNull;
 @RequestMapping("controller")
 public class RestController {
     private final Service service;
+
     @Autowired
     public RestController(Service service) {
         this.service = service;
