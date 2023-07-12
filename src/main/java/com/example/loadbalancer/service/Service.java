@@ -1,5 +1,6 @@
 package com.example.loadbalancer.service;
 
+import com.example.loadbalancer.dto.MediaLayerDTO;
 import com.example.loadbalancer.entity.Call;
 import com.example.loadbalancer.entity.CallFromControlLayer;
 import com.example.loadbalancer.entity.EventFromMediaLayer;
@@ -16,6 +17,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
+import java.util.concurrent.Future;
 
 import static com.example.loadbalancer.utils.Utils.*;
 
@@ -37,40 +39,45 @@ public class Service {
     }
 
 
-    public String processEventControlLayer(CallFromControlLayer callFromControlLayer, String alg) {
+    public Future<String> processEventControlLayer(CallFromControlLayer callFromControlLayer, String alg) {
+        MediaServerWorker<String> task =new MediaServerWorker<>() {
+            @Override
+            public String doCall() {
+                String legId = callFromControlLayer.getLegId();
+                String conversationId = callFromControlLayer.getConversationId();
+                String mediaLayerNumber;
 
-        String legId = callFromControlLayer.getLegId();
-        String conversationId = callFromControlLayer.getConversationId();
-        String mediaLayerNumber;
-
-        Query query = Query.query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
-        List<Call> callsWithSameConversationId = mongoTemplate.find(query, Call.class);
+                Query query = Query.query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
+                List<Call> callsWithSameConversationId = mongoTemplate.find(query, Call.class);
 
 
-        for (Call call : callsWithSameConversationId) {
-            if (call.getCallId().equals(legId)) {
-                return call.getMediaLayerNumber();
+                for (Call call : callsWithSameConversationId) {
+                    if (call.getCallId().equals(legId)) {
+                        return call.getMediaLayerNumber();
+                    }
+                }
+
+                Call callWithSameConversationId = !callsWithSameConversationId.isEmpty() ? callsWithSameConversationId.get(0) : null;
+
+                mediaLayerNumber = getMediaLayer(alg, callWithSameConversationId);
+                if (mediaLayerNumber == null) {
+                    return HttpStatus.INTERNAL_SERVER_ERROR.toString();
+                }
+
+                long currentTime = System.currentTimeMillis();
+                while (!updateMediaLayerNewCall(mediaLayerNumber, currentTime)) {
+                    currentTime = System.currentTimeMillis();
+                }
+
+                logger.info("NEW CALL WAS SAVED TO MONGO DATABASE MEDIA_LAYERS: TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
+
+                mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
+                logger.info("NEW CALL WAS SAVED TO MONGO DATABASE CAll : TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
+
+                return mediaLayerNumber;
             }
-        }
-
-        Call callWithSameConversationId = !callsWithSameConversationId.isEmpty() ? callsWithSameConversationId.get(0) : null;
-
-        mediaLayerNumber = getMediaLayer(alg, callWithSameConversationId);
-        if (mediaLayerNumber == null) {
-            return HttpStatus.INTERNAL_SERVER_ERROR.toString();
-        }
-
-        long currentTime = System.currentTimeMillis();
-        while (!updateMediaLayerNewCall(mediaLayerNumber, currentTime, mongoTemplate)) {
-            currentTime = System.currentTimeMillis();
-        }
-
-        logger.info("NEW CALL WAS SAVED TO MONGO DATABASE MEDIA_LAYERS: TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
-
-        mongoTemplate.save(new Call(legId, conversationId, mediaLayerNumber, currentTime));
-        logger.info("NEW CALL WAS SAVED TO MONGO DATABASE CAll : TO MEDIA LAYER NUMBER : {}", mediaLayerNumber);
-
-        return mediaLayerNumber;
+        };
+        return LoadBalancerExecutorService.getInstance().submit(task);
     }
 
     private String getMediaLayer(String alg, Call callWithSameConversationId) {
@@ -87,7 +94,7 @@ public class Service {
         }
     }
 
-    private boolean updateMediaLayerNewCall(String mediaLayerNumber, long currentTime, MongoTemplate mongoTemplate) {
+    private boolean updateMediaLayerNewCall(String mediaLayerNumber, long currentTime) {
         MediaLayer mediaLayer = mongoTemplate.findById(mediaLayerNumber, MediaLayer.class);
         assert mediaLayer != null;
         long lastModifiedTimeStamp = mediaLayer.getLastModified();
@@ -98,6 +105,8 @@ public class Service {
         mediaLayer.setLatestCallTimeStamp(currentTime);
         mediaLayer.setDuration(duration);
         mediaLayer.setLastModified(currentTime);
+        mediaLayer.calculateAndSetStatus();
+
 
         Query query = new Query(Criteria.where(FIELD_LAST_MODIFIED).is(lastModifiedTimeStamp).and(FIELD_ID).is(mediaLayer.getLayerNumber()));
         Update update = new Update()
@@ -105,7 +114,8 @@ public class Service {
                 .set(FIELD_RATIO, mediaLayer.getRatio())
                 .set(FIELD_LATEST_CALL_TIME_STAMP, mediaLayer.getLatestCallTimeStamp())
                 .set(FIELD_DURATION, mediaLayer.getDuration())
-                .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified());
+                .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified())
+                .set(FIELD_STATUS,mediaLayer.getStatus());
         return 0 != mongoTemplate.updateFirst(query, update, MediaLayer.class).getModifiedCount();
 
     }
@@ -114,11 +124,11 @@ public class Service {
         //RETURNS THE LEAST LOADED MEDIA LAYER SERVER BASED ON THE ALGORITHM.
         switch (Integer.parseInt(alg)) {
             case LEAST_CONNECTIONS:
-                Query queryLeastConnections = Query.query(Criteria.where(FIELD_FAULTY).is(false)).with(Sort.by(Sort.Direction.ASC, FIELD_RATIO).and(Sort.by(Sort.Direction.ASC, FIELD_DURATION))).limit(1);
+                Query queryLeastConnections = Query.query(Criteria.where(FIELD_FAULTY).is(false).and(FIELD_STATUS).ne("red")).with(Sort.by(Sort.Direction.ASC, FIELD_RATIO).and(Sort.by(Sort.Direction.ASC, FIELD_DURATION))).limit(1);
                 return mongoTemplate.findOne(queryLeastConnections, MediaLayer.class);
 
             case ROUND_ROBIN:
-                Query queryRoundRobin = Query.query(Criteria.where(FIELD_FAULTY).is(false)).with(Sort.by(Sort.Direction.ASC, FIELD_LATEST_CALL_TIME_STAMP)).limit(1);
+                Query queryRoundRobin = Query.query(Criteria.where(FIELD_FAULTY).is(false).and(FIELD_STATUS).ne("red")).with(Sort.by(Sort.Direction.ASC, FIELD_LATEST_CALL_TIME_STAMP)).limit(1);
                 return mongoTemplate.findOne(queryRoundRobin, MediaLayer.class);
 
             default:
@@ -160,12 +170,15 @@ public class Service {
             mediaLayer.decreaseDuration(currentTime, currentCall.getTimeStamp());
             mediaLayer.setLastModified(currentTime);
             mediaLayer.decrementNumberOfCalls();
+            mediaLayer.calculateAndSetStatus();
+
 
             Query query = Query.query(Criteria.where(FIELD_LAST_MODIFIED).is(lastModifiedTimeStamp).and(ID).is(mediaLayer.getLayerNumber()));
             Update update = new Update()
                     .set(FIELD_NUMBER_OF_CALLS, mediaLayer.getNumberOfCalls())
                     .set(FIELD_DURATION, mediaLayer.getDuration())
-                    .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified());
+                    .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified())
+                    .set(FIELD_STATUS,mediaLayer.getStatus());
             return mongoTemplate.updateFirst(query, update, MediaLayer.class).getModifiedCount() != 0;
         } else {
             logger.error("Media server for this conversation does not exist. Media layer number: {}", currentCall.getMediaLayerNumber());
@@ -209,5 +222,14 @@ public class Service {
         }
         logger.info("Faulty status was changed");
         return HttpStatus.OK.toString();
+    }
+
+    public String initialize() {
+        Query query =new Query();
+        mongoTemplate.remove(query, Call.class);
+        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("1")));
+        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("2")));
+        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("3")));
+        return "databases cleared";
     }
 }

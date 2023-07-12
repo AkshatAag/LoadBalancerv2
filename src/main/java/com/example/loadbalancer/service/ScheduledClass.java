@@ -28,14 +28,12 @@ import static java.lang.System.exit;
 public class ScheduledClass {
     private final MongoTemplate mongoTemplate;
     private final Service service;
-    private final MongoClient mongoClient;
     Logger logger = LoggerFactory.getLogger(ScheduledClass.class);
 
     @Autowired
-    public ScheduledClass(MongoTemplate mongoTemplate, Service service, MongoClient mongoClient) {
+    public ScheduledClass(MongoTemplate mongoTemplate, Service service) {
         this.mongoTemplate = mongoTemplate;
         this.service = service;
-        this.mongoClient = mongoClient;
     }
 
     private static void refreshMediaLayerAttributes(MediaLayer mediaLayer, Update update) {
@@ -87,8 +85,6 @@ public class ScheduledClass {
         mongoTemplate.remove(Call.class);
         mongoTemplate.remove(MediaLayer.class);
         System.out.println("DATABASES WERE CLEARED");
-        mongoClient.close();
-        System.out.println("CONNECTION WAS CLOSED");
         exit(0);
     }
 }
