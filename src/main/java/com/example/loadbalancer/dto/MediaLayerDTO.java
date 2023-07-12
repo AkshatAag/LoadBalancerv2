@@ -12,7 +12,7 @@ public class MediaLayerDTO {
     private long duration = 0; // total sum of durations of all the simultaneous calls going on in the media layer
     private long lastModified = 0; // it shows the last time a new call was originated/hung-up
     private int numberOfCalls = 0; //it tells us the current total number of calls in the media Layer
-    private int maxLoad = 1000; //defines the maximum load of a mediaLayer
+    private int maxLoad = 100; //defines the maximum load of a mediaLayer
     private boolean faulty = false;
     private int ratio = 0;
     private long latestCallTimeStamp = 0;

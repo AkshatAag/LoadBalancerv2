@@ -16,12 +16,13 @@ public class Utils {
     public static final int GREEN = 4;
     public static final int LEAST_CONNECTIONS = 1;
     public static final int ROUND_ROBIN = 2;
-    public static final int FIXED_DELAY = 10;
+    public static final int FIXED_DELAY = 1;
     public static final String FIELD_ID = "_id";
     public static final int TWO_HOURS_IN_MILLIS = 2 * 60 * 60 * 1000;
     public static final String FIELD_LAST_MODIFIED = "lastModified";
     public static final String FIELD_NUMBER_OF_CALLS = "numberOfCalls";
     public static final String ID = "_id";
+    public static final String FIELD_STATUS = "status";
 
     private Utils() {
         throw new IllegalStateException("Utility class");

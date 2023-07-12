@@ -16,6 +16,7 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.concurrent.ExecutionException;
 
 @Validated
 @org.springframework.web.bind.annotation.RestController
@@ -27,21 +28,20 @@ public class RestController {
     public RestController(Service service) {
         this.service = service;
     }
-
-    @GetMapping("/hi")
-    public String hello() {
-        return "hi";
+    @GetMapping("/init")
+    public String init() {
+        return service.initialize();
     }
 
     @PostMapping("/control_layer/{alg}")
     public String processEventFromControlLayer(@RequestBody @Valid CallFromControlLayerDTO callFromControlLayerDTO,
                                                @PathVariable(required = false)
                                                @Min(value = 1, message = "Select an algorithm between 1-2")
-                                               @Max(value = 2, message = "Select an algorithm between 1-2") String alg) {
+                                               @Max(value = 2, message = "Select an algorithm between 1-2") String alg) throws ExecutionException, InterruptedException {
         //return the destination media layer server's number
         if (alg == null) alg = "1";
         CallFromControlLayer callFromControlLayer = new CallFromControlLayer(callFromControlLayerDTO);
-        return service.processEventControlLayer(callFromControlLayer, alg);
+        return service.processEventControlLayer(callFromControlLayer, alg).get();
     }
 
     @PostMapping("/new_event")

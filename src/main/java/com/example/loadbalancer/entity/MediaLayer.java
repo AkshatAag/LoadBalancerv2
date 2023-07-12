@@ -200,26 +200,32 @@ public class MediaLayer {
     public void calculateAndSetStatus() {
         switch (status) {
             case "red": {
-                if (ratio < 50000) {
-                    setStatusAndMaxLoad("orange");
+                if (ratio < 8000) {
+                    setStatusAndMaxLoad("green");
                 }
                 break;
             }
             case "orange": {
-                if (ratio < 20000) {
+                if (ratio > 40000) {
+                    setStatusAndMaxLoad("red");
+                }
+                else if (ratio < 30000) {
                     setStatusAndMaxLoad("yellow");
                 }
                 break;
             }
             case "yellow": {
-                if (ratio < 8000F) {
+                if (ratio > 18000) {
+                    setStatusAndMaxLoad("orange");
+                }
+                else if (ratio < 14000) {
                     setStatusAndMaxLoad("green");
                 }
                 break;
             }
             case "green": {
-                if (ratio > 10000) {
-                    setStatusAndMaxLoad("red");
+                if (ratio > 8000) {
+                    setStatusAndMaxLoad("yellow");
                 }
                 break;
             }
