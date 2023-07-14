@@ -6,9 +6,11 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.Serializable;
+
 @Document(collection = "MediaLayers")
 @CompoundIndex(name = "ratio_duration", def = "{'ratio': 1, 'duration': 1}")
-public class MediaLayer {
+public class MediaLayer implements Serializable {
     private boolean faulty;
     @Id
     private String layerNumber;//a number which tells which layer number it is
@@ -208,8 +210,7 @@ public class MediaLayer {
             case "orange": {
                 if (ratio > 40000) {
                     setStatusAndMaxLoad("red");
-                }
-                else if (ratio < 30000) {
+                } else if (ratio < 30000) {
                     setStatusAndMaxLoad("yellow");
                 }
                 break;
@@ -217,8 +218,7 @@ public class MediaLayer {
             case "yellow": {
                 if (ratio > 18000) {
                     setStatusAndMaxLoad("orange");
-                }
-                else if (ratio < 14000) {
+                } else if (ratio < 14000) {
                     setStatusAndMaxLoad("green");
                 }
                 break;

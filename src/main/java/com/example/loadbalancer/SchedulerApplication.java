@@ -6,8 +6,6 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import javax.annotation.PreDestroy;
-
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync

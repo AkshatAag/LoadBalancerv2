@@ -14,10 +14,11 @@ public class LoadBalancerExecutorService {
         int corePoolSize = 2;
         int maxPoolSize = 10;
         long keepAliveTime = 1;
-        RejectedExecutionHandler rejectedExecutionHandler = (r, executor) -> {};
+        RejectedExecutionHandler rejectedExecutionHandler = (r, executor) -> {
+        };
         final BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(maxPoolSize * 10);
         executorService = new ThreadPoolExecutor(corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.MINUTES,
-                workQueue, THREAD_FACTORY,rejectedExecutionHandler);
+                workQueue, THREAD_FACTORY, rejectedExecutionHandler);
     }
 
     public static LoadBalancerExecutorService getInstance() {

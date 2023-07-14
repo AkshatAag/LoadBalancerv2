@@ -11,7 +11,7 @@ public class LoadBalancerInstanceApplication2 {
 
     public static void main(String[] args) {
         new SpringApplicationBuilder(LoadBalancerInstanceApplication2.class)
-                .properties("instantiate-once=false","server.port=8081")
+                .properties("instantiate-once=false", "server.port=8081")
                 .run(args);
     }
 

@@ -12,10 +12,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.*;
+import java.rmi.NoSuchObjectException;
 import java.util.concurrent.ExecutionException;
 
 @Validated
@@ -28,6 +26,7 @@ public class RestController {
     public RestController(Service service) {
         this.service = service;
     }
+
     @GetMapping("/init")
     public String init() {
         return service.initialize();
@@ -45,7 +44,7 @@ public class RestController {
     }
 
     @PostMapping("/new_event")
-    public String processEventFromMediaLayer(@RequestBody @Valid EventFromMediaLayerDTO eventDTO) {
+    public String processEventFromMediaLayer(@RequestBody @Valid EventFromMediaLayerDTO eventDTO) throws NoSuchObjectException {
         //makes changes to current state of database as per calls received from media layer
         EventFromMediaLayer event = new EventFromMediaLayer(eventDTO);
         return service.processEventFromMediaLayer(event);
@@ -59,13 +58,18 @@ public class RestController {
     }
 
     @GetMapping("/change_status/{layerNumber}/{color}")
-    public String changeServerStatus(@PathVariable @NotBlank(message = "Layer number cannot be blank") String layerNumber, @PathVariable @NotBlank(message = "Enter a valid color") String color) {
+    public String changeServerStatus(@PathVariable @NotBlank(message = "Layer number cannot be blank") String layerNumber,
+                                     @PathVariable
+                                     @NotBlank(message = "Enter a valid color")
+                                     @Pattern(regexp = "^(red|green|orange|yellow)$", message = "Color can only be red, green, orange or yellow.")
+                                     String color) {
         //used to change the max load of a server. The max load depends on the color category of the server
         return service.setServerStatus(layerNumber, color);
     }
 
     @GetMapping("/set_faulty_status/{layerNumber}/{faulty}")
-    public String changeServerStatus(@PathVariable @NotBlank(message = "Layer number cannot be blank") String layerNumber, @PathVariable @NotNull boolean faulty) {
+    public String changeServerStatus(@PathVariable @NotBlank(message = "Layer number cannot be blank") String layerNumber,
+                                     @PathVariable @NotNull boolean faulty) {
         //used to change the current condition of server to faulty. Calls are not routed to faulty server.
         return service.setFaultyStatus(layerNumber, faulty);
     }
