@@ -3,10 +3,6 @@
 ## Overview
 This project is a load balancer that acts as an intermediary between incoming calls and media servers. It is built using Java, Spring Boot and MongoDB technologies. The load balancer, referred to as "LB," responds to API calls from the control layer and returns the appropriate media server number to which the new call should be redirected. It stores the current state of the media servers in a cloud database and modifies it on the basis of new calls from control layer, or events generated from the media layer.
 
-The load balancing algorithm is determined by the `alg` parameter in the API call.<br> 
-For `alg = 1`, LB uses the least connections algorithm.<br>
-For `alg = 2`, LB uses the round-robin algorithm.
-
 ## Database Connection
 Before running the program, follow these steps:
 1. Clone the project repository.
@@ -36,9 +32,11 @@ Make sure you have the following dependencies installed:
   POST /controller/control_layer/{alg}
 ```
 <br>
-Replace `{alg}` with the desired algorithm value:
-- `1` for the least connections algorithm.
-- `2` for the round-robin algorithm.
+The load balancing algorithm is determined by the `alg` parameter in the API call.<br> 
+
+For `alg = 1`, LB uses the least connections algorithm.<br>
+For `alg = 2`, LB uses the round-robin algorithm.
+
 <br>
 The body of the POST request should be:
 
