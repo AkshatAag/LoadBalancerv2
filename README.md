@@ -137,7 +137,7 @@ It might happen that the servers have too much load and they start faulting. It 
 -Replace `{faulty}` with the faulty status. It can be true or false.
 
 ---
-
+</ul>
 
 
 ## Contact
