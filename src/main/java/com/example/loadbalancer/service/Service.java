@@ -98,6 +98,7 @@ public class Service {
     }
 
     private String getMediaLayer(String alg, Call callWithSameConversationId) {
+
         if (callWithSameConversationId != null) {
             return callWithSameConversationId.getMediaLayerNumber();
         } else {
@@ -106,12 +107,9 @@ public class Service {
     }
 
     private String assignNewMediaLayer(String alg) {
-        MediaLayer destinationMediaLayer = getLeastLoaded(alg);
-        if (destinationMediaLayer == null) {
-            logger.error("Could not find least loaded media server.");
-            throw new NoFreeMediaServerException();
-        }
-        return destinationMediaLayer.getLayerNumber();
+
+        return getLeastLoaded(alg).getLayerNumber();
+
     }
 
     private boolean updateAndSaveMediaLayerOnNewCall(String mediaLayerNumber, long currentTime) {
@@ -130,18 +128,29 @@ public class Service {
 
     private MediaLayer getLeastLoaded(String alg) {
         //RETURNS THE LEAST LOADED MEDIA LAYER SERVER BASED ON THE ALGORITHM.
+        MediaLayer destination;
+
         switch (Integer.parseInt(alg)) {
             case LEAST_CONNECTIONS:
                 Query queryLeastConnections = Query.query(Criteria.where(FIELD_FAULTY).is(false).and(FIELD_STATUS).ne("red")).with(Sort.by(Sort.Direction.ASC, FIELD_RATIO).and(Sort.by(Sort.Direction.ASC, FIELD_DURATION))).limit(1);
-                return mongoTemplate.findOne(queryLeastConnections, MediaLayer.class);
+                destination = mongoTemplate.findOne(queryLeastConnections, MediaLayer.class);
+
+                break;
 
             case ROUND_ROBIN:
                 Query queryRoundRobin = Query.query(Criteria.where(FIELD_FAULTY).is(false).and(FIELD_STATUS).ne("red")).with(Sort.by(Sort.Direction.ASC, FIELD_LATEST_CALL_TIME_STAMP)).limit(1);
-                return mongoTemplate.findOne(queryRoundRobin, MediaLayer.class);
+                destination = mongoTemplate.findOne(queryRoundRobin, MediaLayer.class);
+                break;
 
             default:
                 return null;
         }
+
+        if (null == destination) {
+            logger.error("Could not find least loaded media server.");
+            throw new NoFreeMediaServerException();
+        }
+        else return destination;
     }
 
     public String processEventFromMediaLayer(EventFromMediaLayer event) {
