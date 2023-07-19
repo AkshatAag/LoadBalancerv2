@@ -147,8 +147,7 @@ public class Service {
         if (null == destination) {
             logger.error("Could not find least loaded media server.");
             throw new NoFreeMediaServerException();
-        }
-        else return destination;
+        } else return destination;
     }
 
     public String processEventFromMediaLayer(EventFromMediaLayer event) {
@@ -195,8 +194,8 @@ public class Service {
                     .set(FIELD_DURATION, mediaLayer.getDuration())
                     .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified())
                     .set(FIELD_STATUS, mediaLayer.getStatus())
-                    .set(FIELD_MAX_LOAD,mediaLayer.getMaxLoad())
-                    .set(FIELD_RATIO,mediaLayer.getRatio());
+                    .set(FIELD_MAX_LOAD, mediaLayer.getMaxLoad())
+                    .set(FIELD_RATIO, mediaLayer.getRatio());
             return mongoTemplate.updateFirst(query, update, MediaLayer.class).getModifiedCount() != 0;
         } else {
             logger.error("Media server for this conversation does not exist. Media layer number: {}", currentCall.getMediaLayerNumber());
@@ -240,27 +239,27 @@ public class Service {
     public String initialize() {
         Query query = new Query();
         mongoTemplate.remove(query, Call.class);
-        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("1",50)));
-        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("2",75)));
+        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("1", 50)));
+        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("2", 75)));
         addNewMediaLayer(new MediaLayer(new MediaLayerDTO("3")));
         return "databases cleared";
     }
 
     public String getServerStatus(String serverAddress) {
-        if(serverAddress.equals("all")){
+        if (serverAddress.equals("all")) {
             return getStatusOfAllServers();
-        }
-        else {
+        } else {
             MediaLayer mediaLayer = mongoTemplate.findById(serverAddress, MediaLayer.class);
-            if(null==mediaLayer) throw new NoSuchObjectInDatabaseException(MediaLayer.class,serverAddress,HttpStatus.BAD_REQUEST);
+            if (null == mediaLayer)
+                throw new NoSuchObjectInDatabaseException(MediaLayer.class, serverAddress, HttpStatus.BAD_REQUEST);
             else return mediaLayer.toString();
         }
     }
 
     private String getStatusOfAllServers() {
         List<MediaLayer> mediaLayers = mongoTemplate.findAll(MediaLayer.class);
-        StringBuilder res=new StringBuilder();
-        for(MediaLayer mediaLayer:mediaLayers){
+        StringBuilder res = new StringBuilder();
+        for (MediaLayer mediaLayer : mediaLayers) {
             res.append(mediaLayer.toString());
             res.append("\n");
         }

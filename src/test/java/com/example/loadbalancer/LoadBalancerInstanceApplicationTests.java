@@ -21,14 +21,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -45,8 +42,6 @@ class LoadBalancerInstanceApplicationTests {
     private static MongodExecutable mongodExecutable;
     private static Service mockService;
     private static MongoTemplate mongoTemplate;
-    @Autowired
-    private MockMvc mockMvc;
 
     @AfterAll
     static void clean() {
@@ -111,6 +106,7 @@ class LoadBalancerInstanceApplicationTests {
         mockService.setServerStatus("2", "yellow");
         assertEquals(10, Objects.requireNonNull(mongoTemplate.findById("2", MediaLayer.class)).getMaxLoad());
     }
+
     @Test
     void setServerStatusMediaLayerDoesNotExist() {
         assertThrows(NoSuchObjectInDatabaseException.class, () -> mockService.setServerStatus("2", "yellow"));
