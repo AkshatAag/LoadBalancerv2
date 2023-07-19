@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import javax.validation.constraints.*;
-import java.rmi.NoSuchObjectException;
 import java.util.concurrent.ExecutionException;
 
 @Validated
@@ -32,9 +31,14 @@ public class RestController {
         return service.initialize();
     }
 
+    @GetMapping("/server_status")
+    public String getServerStatus(@RequestParam(required = false, defaultValue = "all") String serverAddress){
+        return service.getServerStatus(serverAddress);
+    }
+
     @PostMapping("/control_layer/{alg}")
     public String processEventFromControlLayer(@RequestBody @Valid CallFromControlLayerDTO callFromControlLayerDTO,
-                                               @PathVariable(required = false)
+                                               @PathVariable
                                                @Min(value = 1, message = "Select an algorithm between 1-2")
                                                @Max(value = 2, message = "Select an algorithm between 1-2") String alg) throws ExecutionException, InterruptedException {
         //return the destination media layer server's number
@@ -44,7 +48,7 @@ public class RestController {
     }
 
     @PostMapping("/new_event")
-    public String processEventFromMediaLayer(@RequestBody @Valid EventFromMediaLayerDTO eventDTO) throws NoSuchObjectException {
+    public String processEventFromMediaLayer(@RequestBody @Valid EventFromMediaLayerDTO eventDTO) {
         //makes changes to current state of database as per calls received from media layer
         EventFromMediaLayer event = new EventFromMediaLayer(eventDTO);
         return service.processEventFromMediaLayer(event);

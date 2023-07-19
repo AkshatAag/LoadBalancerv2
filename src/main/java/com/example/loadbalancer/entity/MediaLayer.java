@@ -191,12 +191,12 @@ public class MediaLayer implements Serializable {
     @Override
     public String toString() {
         return "MediaLayer{" +
-                "faulty=" + faulty +
-                ", layerNumber='" + layerNumber + '\'' +
-                ", status='" + status + '\'' +
-                ", numberOfCalls=" + numberOfCalls +
-                ", maxLoad=" + maxLoad +
-                '}';
+                "\n\tfaulty=" + faulty +
+                ",\n\tlayerNumber=" + layerNumber +
+                ",\n\tstatus=" + status +
+                ",\n\tnumberOfCalls=" + numberOfCalls +
+                ",\n\tratio=" + ratio +
+                "\n}";
     }
 
     public void calculateAndSetStatus() {

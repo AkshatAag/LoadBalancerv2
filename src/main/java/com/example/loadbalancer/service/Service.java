@@ -41,18 +41,8 @@ public class Service {
                 .set(FIELD_LATEST_CALL_TIME_STAMP, mediaLayer.getLatestCallTimeStamp())
                 .set(FIELD_DURATION, mediaLayer.getDuration())
                 .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified())
-                .set(FIELD_STATUS, mediaLayer.getStatus());
-    }
-
-    private static void updateMediaLayerPropertiesNewCall(long currentTime, MediaLayer mediaLayer, long lastModifiedTimeStamp) {
-        long duration = mediaLayer.getDuration() + (currentTime - lastModifiedTimeStamp) * mediaLayer.getNumberOfCalls();
-
-        mediaLayer.incrementNumberOfCalls();
-        mediaLayer.calculateAndSetStatus();
-        mediaLayer.setLatestCallTimeStamp(currentTime);
-        mediaLayer.setDuration(duration);
-        mediaLayer.setLastModified(currentTime);
-        mediaLayer.calculateAndSetStatus();
+                .set(FIELD_STATUS, mediaLayer.getStatus())
+                .set(FIELD_MAX_LOAD, mediaLayer.getMaxLoad());
     }
 
     public DeleteResult deleteById(String id, Class<?> entityClass) {
@@ -72,7 +62,6 @@ public class Service {
 
                 Query query = Query.query(Criteria.where(FIELD_CONVERSATION_ID).is(conversationId));
                 List<Call> callsWithSameConversationId = mongoTemplate.find(query, Call.class);
-
 
                 for (Call call : callsWithSameConversationId) {
                     if (call.getCallId().equals(legId)) {
@@ -118,7 +107,16 @@ public class Service {
             throw new NoSuchObjectInDatabaseException(MediaLayer.class, mediaLayerNumber, HttpStatus.INTERNAL_SERVER_ERROR);
 
         long lastModifiedTimeStamp = mediaLayer.getLastModified();
-        updateMediaLayerPropertiesNewCall(currentTime, mediaLayer, lastModifiedTimeStamp);
+        long duration = mediaLayer.getDuration() + (currentTime - lastModifiedTimeStamp) * mediaLayer.getNumberOfCalls();
+
+        mediaLayer.incrementNumberOfCalls();
+        mediaLayer.calculateAndSetRatio();
+        mediaLayer.calculateAndSetStatus();
+        mediaLayer.setLatestCallTimeStamp(currentTime);
+        mediaLayer.setDuration(duration);
+        mediaLayer.setLastModified(currentTime);
+        mediaLayer.calculateAndSetRatio();
+
         Query query = new Query(Criteria.where(FIELD_LAST_MODIFIED).is(lastModifiedTimeStamp).and(FIELD_ID).is(mediaLayer.getLayerNumber()));
         Update update = createUpdateMediaLayerNewCall(mediaLayer);
 
@@ -237,9 +235,30 @@ public class Service {
     public String initialize() {
         Query query = new Query();
         mongoTemplate.remove(query, Call.class);
-        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("1")));
-        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("2")));
+        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("1",50)));
+        addNewMediaLayer(new MediaLayer(new MediaLayerDTO("2",75)));
         addNewMediaLayer(new MediaLayer(new MediaLayerDTO("3")));
         return "databases cleared";
+    }
+
+    public String getServerStatus(String serverAddress) {
+        if(serverAddress.equals("all")){
+            return getStatusOfAllServers();
+        }
+        else {
+            MediaLayer mediaLayer = mongoTemplate.findById(serverAddress, MediaLayer.class);
+            if(null==mediaLayer) throw new NoSuchObjectInDatabaseException(MediaLayer.class,serverAddress,HttpStatus.BAD_REQUEST);
+            else return mediaLayer.toString();
+        }
+    }
+
+    private String getStatusOfAllServers() {
+        List<MediaLayer> mediaLayers = mongoTemplate.findAll(MediaLayer.class);
+        StringBuilder res=new StringBuilder();
+        for(MediaLayer mediaLayer:mediaLayers){
+            res.append(mediaLayer.toString());
+            res.append("\n");
+        }
+        return res.toString();
     }
 }

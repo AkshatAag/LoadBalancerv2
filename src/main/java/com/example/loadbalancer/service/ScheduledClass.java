@@ -35,7 +35,7 @@ public class ScheduledClass {
         this.service = service;
     }
 
-    private static void refreshMediaLayerAttributes(MediaLayer mediaLayer, Update update) {
+    private static Update refreshMediaLayerAttributes(MediaLayer mediaLayer) {
         //updates the media layer attributes as per real time.
         long curTime = System.currentTimeMillis();
         long duration = mediaLayer.getDuration() + (curTime - mediaLayer.getLastModified()) * mediaLayer.getNumberOfCalls();
@@ -43,11 +43,13 @@ public class ScheduledClass {
         mediaLayer.setLastModified(curTime);
         mediaLayer.calculateAndSetStatus();
         mediaLayer.calculateAndSetRatio();
-        update.set("duration", mediaLayer.getDuration());
-        update.set("lastModified", mediaLayer.getLastModified());
-        update.set("status", mediaLayer.getStatus());
-        update.set("maxLoad", mediaLayer.getMaxLoad());
-        update.set("ratio", mediaLayer.getRatio());
+        Update update=new Update();
+        update.set(FIELD_DURATION, mediaLayer.getDuration());
+        update.set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified());
+        update.set(FIELD_STATUS, mediaLayer.getStatus());
+        update.set(FIELD_MAX_LOAD, mediaLayer.getMaxLoad());
+        update.set(FIELD_RATIO, mediaLayer.getRatio());
+        return update;
     }
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = 10, timeUnit = TimeUnit.SECONDS)
@@ -59,9 +61,8 @@ public class ScheduledClass {
             MediaLayer mediaLayer = mongoTemplate.findById(id, MediaLayer.class);
             assert mediaLayer != null;
             long timeStamp = mediaLayer.getLastModified();
-            Update update = new Update();
-            Query query = new Query(Criteria.where("lastModified").is(timeStamp).and("_id").is(mediaLayer.getLayerNumber()));
-            refreshMediaLayerAttributes(mediaLayer, update);
+            Query query = new Query(Criteria.where(FIELD_LAST_MODIFIED).is(timeStamp).and(ID).is(mediaLayer.getLayerNumber()));
+            Update update = refreshMediaLayerAttributes(mediaLayer);
             mongoTemplate.updateFirst(query, update, MediaLayer.class);
         }
         logger.info("Media Layers refreshed");
@@ -71,7 +72,7 @@ public class ScheduledClass {
     public void hangupCalls() {
         long cutoff = System.currentTimeMillis() - TWO_HOURS_IN_MILLIS;
 
-        Query query = new Query(Criteria.where("fieldName").gt(cutoff));
+        Query query = new Query(Criteria.where(FIELD_DURATION).gt(cutoff));
         List<Call> callList = mongoTemplate.find(query, Call.class);
         for (Call call : callList) {
             service.handleEventHangup(new EventFromMediaLayer(call.getCallId(), CHANNEL_HANGUP));

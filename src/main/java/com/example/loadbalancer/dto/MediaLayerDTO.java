@@ -21,6 +21,11 @@ public class MediaLayerDTO {
         this.layerNumber = layerNumber;
     }
 
+    public MediaLayerDTO(String layerNumber, int maxLoad) {
+        this.layerNumber = layerNumber;
+        this.maxLoad = maxLoad;
+    }
+
     public MediaLayerDTO() {
     }
 

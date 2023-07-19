@@ -23,6 +23,7 @@ public class Utils {
     public static final String FIELD_NUMBER_OF_CALLS = "numberOfCalls";
     public static final String ID = "_id";
     public static final String FIELD_STATUS = "status";
+    public static final String FIELD_MAX_LOAD = "maxLoad";
 
     private Utils() {
         throw new IllegalStateException("Utility class");
