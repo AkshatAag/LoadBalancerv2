@@ -1,6 +1,7 @@
 package com.example.loadbalancer.service;
 
 import com.example.loadbalancer.entity.Call;
+import com.example.loadbalancer.entity.CallFromControlLayer;
 import com.example.loadbalancer.entity.EventFromMediaLayer;
 import com.example.loadbalancer.entity.MediaLayer;
 import org.slf4j.Logger;
@@ -8,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.ArithmeticOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -52,7 +55,7 @@ public class ScheduledClass {
         return update;
     }
 
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = 10, timeUnit = TimeUnit.SECONDS)
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = 10000, timeUnit = TimeUnit.SECONDS)
     public void refreshDatabaseMongo() {
         List<MediaLayer> mediaLayerList = mongoTemplate.findAll(MediaLayer.class);
         List<String> mediaLayerIdList = mediaLayerList.stream().map(MediaLayer::getLayerNumber).collect(Collectors.toList());
@@ -68,14 +71,31 @@ public class ScheduledClass {
         logger.info("Media Layers refreshed");
     }
 
-    @Scheduled(fixedDelay = GENERATE_AUTOHANGUP, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(fixedDelay = GENERATE_AUTOHANGUP,initialDelay = 10,timeUnit = TimeUnit.MINUTES)
     public void hangupCalls() {
         long cutoff = System.currentTimeMillis() - TWO_HOURS_IN_MILLIS;
-
         Query query = new Query(Criteria.where(FIELD_DURATION).gt(cutoff));
         List<Call> callList = mongoTemplate.find(query, Call.class);
         for (Call call : callList) {
             service.handleEventHangup(new EventFromMediaLayer(call.getCallId(), CHANNEL_HANGUP));
+            logger.info("automatic hangup event generated for callID {}", call.getCallId());
+        }
+    }
+
+    @Scheduled(initialDelay = 10, fixedDelay = 5, timeUnit = TimeUnit.SECONDS)
+    public void testing(){
+        Random random = new Random();
+        for(int i=0;i<5;i++){
+            String legId = String.valueOf(random.nextInt(100000000) + 1);
+            String conversationId = String.valueOf(random.nextInt(100) + 1);
+            service.processEventControlLayer(new CallFromControlLayer(legId,conversationId),"1");
+        }
+
+
+        Query query =new Query().limit(10);
+        List<Call> callList = mongoTemplate.find(query, Call.class);
+        for(Call call :callList){
+            service.handleEventHangup(new EventFromMediaLayer(call.getCallId(),CHANNEL_HANGUP));
             logger.info("automatic hangup event generated for callID {}", call.getCallId());
         }
     }

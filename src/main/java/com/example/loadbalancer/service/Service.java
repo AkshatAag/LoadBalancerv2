@@ -184,14 +184,19 @@ public class Service {
             mediaLayer.decreaseDuration(currentTime, currentCall.getTimeStamp());
             mediaLayer.setLastModified(currentTime);
             mediaLayer.decrementNumberOfCalls();
+            mediaLayer.calculateAndSetRatio();
             mediaLayer.calculateAndSetStatus();
+            mediaLayer.calculateAndSetRatio();
+
 
             Query query = Query.query(Criteria.where(FIELD_LAST_MODIFIED).is(lastModifiedTimeStamp).and(ID).is(mediaLayer.getLayerNumber()));
             Update update = new Update()
                     .set(FIELD_NUMBER_OF_CALLS, mediaLayer.getNumberOfCalls())
                     .set(FIELD_DURATION, mediaLayer.getDuration())
                     .set(FIELD_LAST_MODIFIED, mediaLayer.getLastModified())
-                    .set(FIELD_STATUS, mediaLayer.getStatus());
+                    .set(FIELD_STATUS, mediaLayer.getStatus())
+                    .set(FIELD_MAX_LOAD,mediaLayer.getMaxLoad())
+                    .set(FIELD_RATIO,mediaLayer.getRatio());
             return mongoTemplate.updateFirst(query, update, MediaLayer.class).getModifiedCount() != 0;
         } else {
             logger.error("Media server for this conversation does not exist. Media layer number: {}", currentCall.getMediaLayerNumber());
